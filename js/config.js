@@ -39,12 +39,12 @@ const T = {
   f_title: 'Activity title', f_desc: 'Description', f_date: 'Date', f_images: 'Images', f_add: 'Add image',
   f_hint: 'Up to 30 images', f_full: 'Reached the 30-image limit',
   empty_admin: 'No activities yet — tap "Add activity" to start', empty_members_admin: 'No team members yet — tap "Add member".',
-  org_short: 'Monogram (logo)', org_namefull: 'Full name', org_tagline: 'Tagline', org_about: 'About',
+  org_logo: 'Logo', org_logo_hint: 'Shown in the header and footer instead of the monogram', org_short: 'Monogram', org_short_hint: 'Shown when no logo is set', org_namefull: 'Full name', org_tagline: 'Tagline', org_about: 'About',
   org_contact: 'Contact', c_place: 'Working area', c_email: 'Email',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
   hist_story: 'Organization story', m_add: 'Add milestone', m_year: 'Year', m_title: 'Title', m_desc: 'Description',
   mb_add: 'Add member', mb_edit: 'Edit member', m_edit: 'Edit milestone', mb_name: 'Name', mb_role: 'Role', mb_photo: 'Photo',
-  footer_about: 'Join us in bringing health and hope to families along the border', footer_contact: 'Contact', footer_explore: 'Explore', footer_rights: 'All rights reserved',
+  footer_contact: 'Contact', footer_explore: 'Explore', footer_rights: 'All rights reserved',
   confirm_del: 'Delete this activity?', confirm_del_member: 'Remove this team member?', confirm_del_ms: 'Remove this milestone?',
   loading: 'Loading…', saving: 'Saving…'
 };

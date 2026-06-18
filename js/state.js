@@ -18,7 +18,7 @@ let state = {
 };
 
 function emptyOrg(){
-  return { short: 'BHI', nameFull:{en:'Border Health Initiative'}, tagline:{en:''}, about:{en:''},
+  return { short: 'BHI', logo: '', nameFull:{en:'Border Health Initiative'}, tagline:{en:''}, about:{en:''},
            history:{story:''}, contact:{place:'',email:''}, stats:{} };
 }
 
@@ -26,6 +26,7 @@ function orgFromRow(r){
   if(!r) return emptyOrg();
   return {
     short: r.short || 'BHI',
+    logo: r.logo || '',
     nameFull: { en: r.name_full || '' },
     tagline:  { en: r.tagline   || '' },
     about:    { en: r.about     || '' },
@@ -35,7 +36,7 @@ function orgFromRow(r){
   };
 }
 function orgToRow(o){
-  return { id:1, short:o.short, name_full:o.nameFull.en, tagline:o.tagline.en, about:o.about.en,
+  return { id:1, short:o.short, logo:o.logo||'', name_full:o.nameFull.en, tagline:o.tagline.en, about:o.about.en,
            story:(o.history&&o.history.story)||'', place:o.contact.place, email:o.contact.email,
            stats:o.stats||{}, updated_at:new Date().toISOString() };
 }

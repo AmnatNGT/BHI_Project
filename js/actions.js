@@ -38,6 +38,7 @@ const App = {
   editOrg(){ App._resetEdit(); state.snap=JSON.parse(JSON.stringify(state.org)); state.edit.org=true; render(); },
   cancelOrg(){ if(state.snap) state.org=state.snap; state.snap=null; state.edit.org=false; render(); },
   onOrgField(el){ setPath(state.org, el.dataset.path, el.value); },
+  onOrgLogo(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'org')).then(url=>{ state.org.logo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
   async saveOrg(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.org=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
 
   // activities

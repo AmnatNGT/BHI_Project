@@ -36,8 +36,20 @@ function dashView(){
     <div style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;padding:26px;max-width:620px;animation:fadeIn .2s ease both">
       <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0 0 20px">${T.dash_orginfo}</h3>
       <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_logo}</label>
+        <div style="display:flex;align-items:center;gap:14px">
+          <label style="width:64px;height:64px;border-radius:14px;flex:none;cursor:pointer;${o.logo?bg(o.logo):'background:var(--primary)'};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+            ${!o.logo?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:18px;color:rgba(255,255,255,.92)">${esc(o.short)}</span>`:''}
+            <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(18,40,28,.55);color:#fff;font-size:9px;text-align:center;padding:2px">${T.mb_photo}</span>
+            <input type="file" accept="image/*" onchange="App.onOrgLogo(this)" style="display:none">
+          </label>
+          <span style="font-size:12.5px;color:#8aa093">${T.org_logo_hint}</span>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_short}</label>
         <input class="field" value="${attr(o.short)}" data-path="short" oninput="App.onOrgField(this)" maxlength="4" style="width:120px;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+        <div style="font-size:11.5px;color:#8aa093;margin-top:6px">${T.org_short_hint}</div>
       </div>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_namefull}</label>
@@ -61,6 +73,12 @@ function dashView(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0">${T.dash_orginfo}</h3>
         ${editBtn('App.editOrg()', T.edit)}
+      </div>
+      <div style="padding:11px 0;border-top:1px solid #EFF6F1;display:flex;align-items:center;gap:14px">
+        <div style="font-size:12px;font-weight:600;color:#8aa093;flex:none">${T.org_logo}</div>
+        <div style="width:48px;height:48px;border-radius:12px;flex:none;${o.logo?bg(o.logo):'background:var(--primary)'};display:flex;align-items:center;justify-content:center">
+          ${!o.logo?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:14px;color:rgba(255,255,255,.92)">${esc(o.short)}</span>`:''}
+        </div>
       </div>
       ${infoRow(T.org_short, o.short)}
       ${infoRow(T.org_namefull, o.nameFull.en)}

@@ -12,6 +12,12 @@ function cancelBtnEl(onclick){ return `<button onclick="${onclick}" style="paddi
 function delBtnEl(onclick){ return `<button class="chip-del" onclick="${onclick}" title="${attr(T.delete)}" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:14px;flex:none">✕</button>`; }
 function infoRow(label,val){ return `<div style="padding:11px 0;border-top:1px solid #EFF6F1"><div style="font-size:12px;font-weight:600;color:#8aa093">${esc(label)}</div><div style="font-size:14.5px;color:#1F2D26;margin-top:3px;white-space:pre-wrap;line-height:1.6">${esc(val||'—')}</div></div>`; }
 
+function brandMark(size, radius, fontSize){
+  const has=!!state.org.logo;
+  const cover=has?bg(state.org.logo):'background:var(--primary)';
+  return `<div style="width:${size}px;height:${size}px;border-radius:${radius}px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:${fontSize}px;letter-spacing:.5px;box-shadow:0 6px 16px -6px var(--primary);flex:none;${cover}">${!has?esc(state.org.short):''}</div>`;
+}
+
 function activityCard(a){
   const has=a.images&&a.images.length>0, n=a.images?a.images.length:0;
   const cover=has?bg(a.images[0]):('background:'+GRADS[a._i%GRADS.length]);
@@ -45,7 +51,7 @@ function nav(){
   <header style="position:sticky;top:0;z-index:50;background:rgba(243,249,245,.85);backdrop-filter:blur(12px);border-bottom:1px solid #DCEBE2">
     <div class="nav-wrap" style="max-width:1180px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:16px">
       <div onclick="App.goHome()" style="display:flex;align-items:center;gap:11px;cursor:pointer;min-width:0">
-        <div style="width:42px;height:42px;border-radius:13px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:17px;letter-spacing:.5px;box-shadow:0 6px 16px -6px var(--primary);flex:none">${esc(state.org.short)}</div>
+        ${brandMark(42,13,17)}
         <div style="min-width:0">
           <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.nameFull.en)}</div>
           <div style="font-size:11px;color:#6F8479;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.tagline.en)}</div>
@@ -73,10 +79,9 @@ function footer(){
     <div class="footer-grid" style="max-width:1180px;margin:0 auto;padding:48px 24px 30px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:36px">
       <div>
         <div style="display:flex;align-items:center;gap:11px">
-          <div style="width:40px;height:40px;border-radius:12px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700">${esc(state.org.short)}</div>
+          ${brandMark(40,12,16)}
           <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:16px">${esc(state.org.nameFull.en)}</div>
         </div>
-        <p style="color:#9bb3a6;font-size:14px;line-height:1.7;margin:16px 0 0;max-width:340px">${T.footer_about}</p>
       </div>
       <div>
         <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:14px">${T.footer_contact}</div>

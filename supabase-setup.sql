@@ -12,6 +12,7 @@
 create table if not exists public.org (
   id          int primary key default 1,
   short       text,
+  logo        text,                          -- public image URL
   name_full   text,
   tagline     text,
   about       text,
@@ -22,6 +23,9 @@ create table if not exists public.org (
   updated_at  timestamptz default now(),
   constraint org_single_row check (id = 1)
 );
+
+-- patches an existing org table that predates the logo column
+alter table public.org add column if not exists logo text;
 
 create table if not exists public.activities (
   id          uuid primary key default gen_random_uuid(),

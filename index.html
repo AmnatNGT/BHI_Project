@@ -11,7 +11,7 @@
   :root{--primary:#2E8B57;--primary-strong:#236E44;--primary-soft:#E1F0E8;--accent:#57A777}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{font-family:'Sarabun',system-ui,sans-serif;background:#F3F9F5;color:#1F2D26;-webkit-font-smoothing:antialiased;min-height:100vh}
+  body{font-family:'Sarabun',system-ui,sans-serif;background:#F3F9F5;color:#1F2D26;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
   input,textarea,button,select{font-family:inherit}
   textarea{resize:vertical}
   ::selection{background:var(--primary);color:#fff}
@@ -30,7 +30,25 @@
   .add-img:hover{border-color:var(--primary)!important;background:#ECF7F1!important}
   .field:focus{border-color:var(--primary)!important;background:#fff!important}
   .resp-grid{grid-template-columns:1.05fr .95fr}
+  /* ---------- responsive ---------- */
+  .nav-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;border-radius:11px;border:1px solid #DCEBE2;background:#fff;color:var(--primary);font-size:19px;cursor:pointer;margin-left:auto;flex:none}
+  .nav-toggle:hover{border-color:var(--primary)}
+  .nav-mobile{display:none}
   @media(max-width:820px){.resp-grid{grid-template-columns:1fr!important;gap:34px!important}.footer-grid{grid-template-columns:1fr!important}}
+  @media(max-width:780px){
+    .nav-desktop{display:none!important}
+    .nav-toggle{display:flex}
+    .nav-mobile{display:flex!important}
+    .modal-card{padding:22px!important;border-radius:18px!important}
+    .detail-hero{height:240px!important}
+    .ms-row{grid-template-columns:1fr!important}
+    .mem-row{flex-wrap:wrap}
+  }
+  @media(max-width:480px){
+    .hero-sec{padding-top:46px!important;padding-bottom:38px!important}
+    .nav-wrap{padding-left:16px!important;padding-right:16px!important}
+    .modal-wrap{padding:18px 12px!important}
+  }
   .spinner{width:34px;height:34px;border:3px solid #D2E5D9;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
 </style>
 </head>
@@ -80,6 +98,7 @@ const T = {
   login_btn: 'Log in', login_hint: 'Sign in with the admin account you created in Supabase', login_err: 'Incorrect email or password',
   dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team', autosave: 'Changes save automatically',
   saved: 'Saved', add_activity: 'Add activity', edit_activity: 'Edit activity', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel',
+  save_changes: 'Save changes', save_hint: 'Edits are applied only after you click Save', unsaved: 'Unsaved changes',
   f_title: 'Activity title', f_desc: 'Description', f_date: 'Date', f_images: 'Images', f_add: 'Add image',
   f_hint: 'Up to 30 images', f_full: 'Reached the 30-image limit',
   empty_admin: 'No activities yet — tap "Add activity" to start', empty_members_admin: 'No team members yet — tap "Add member".',
@@ -87,7 +106,7 @@ const T = {
   org_contact: 'Contact', c_place: 'Working area', c_email: 'Email',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
   hist_story: 'Organization story', m_add: 'Add milestone', m_year: 'Year', m_title: 'Title', m_desc: 'Description',
-  mb_add: 'Add member', mb_name: 'Name', mb_role: 'Role', mb_bio: 'Short bio', mb_photo: 'Photo',
+  mb_add: 'Add member', mb_edit: 'Edit member', m_edit: 'Edit milestone', mb_name: 'Name', mb_role: 'Role', mb_bio: 'Short bio', mb_photo: 'Photo',
   footer_about: 'Join us in bringing health and hope to families along the border', footer_contact: 'Contact', footer_explore: 'Explore', footer_rights: 'All rights reserved',
   confirm_del: 'Delete this activity?', confirm_del_member: 'Remove this team member?', confirm_del_ms: 'Remove this milestone?',
   loading: 'Loading…', saving: 'Saving…'
@@ -102,7 +121,10 @@ let state = {
   formOpen: false, editingId: null,
   form: { title: '', desc: '', date: '', images: [] },
   detailOpen: false, detailId: null, di: 0,
-  orgSaved: false,
+  orgSaved: false, menuOpen: false,
+  edit: { org:false, story:false }, snap: null,
+  memForm: { open:false, id:null, name:'', role:'', bio:'', photo:'' },
+  msForm: { open:false, id:null, year:'', title:'', desc:'' },
   loading: true, busy: false, errorMsg: '',
   org: emptyOrg(), activities: [], members: [], milestones: []
 };
@@ -192,15 +214,17 @@ async function uploadImage(dataUrl, prefix){
    ============================================================ */
 const App = {
   // nav
-  goHome(){ state.view='home'; render(); },
-  goActivities(){ state.view='activities'; render(); },
-  goHistory(){ state.view='history'; render(); },
-  goMembers(){ state.view='members'; render(); },
-  goAdmin(){ state.view='admin'; render(); },
-  adminToOrg(){ state.adminTab='org'; render(); },
-  adminToActs(){ state.adminTab='activities'; render(); },
-  adminToHist(){ state.adminTab='history'; render(); },
-  adminToMem(){ state.adminTab='members'; render(); },
+  toggleMenu(){ state.menuOpen=!state.menuOpen; render(); },
+  goHome(){ state.view='home'; state.menuOpen=false; render(); },
+  goActivities(){ state.view='activities'; state.menuOpen=false; render(); },
+  goHistory(){ state.view='history'; state.menuOpen=false; render(); },
+  goMembers(){ state.view='members'; state.menuOpen=false; render(); },
+  goAdmin(){ state.view='admin'; state.menuOpen=false; render(); },
+  _resetEdit(){ state.edit={ org:false, story:false }; state.snap=null; if(state.memForm) state.memForm.open=false; if(state.msForm) state.msForm.open=false; },
+  adminToOrg(){ App._resetEdit(); state.adminTab='org'; render(); },
+  adminToActs(){ App._resetEdit(); state.adminTab='activities'; render(); },
+  adminToHist(){ App._resetEdit(); state.adminTab='history'; render(); },
+  adminToMem(){ App._resetEdit(); state.adminTab='members'; render(); },
 
   // login (Supabase Auth)
   onLoginInput(el){ state.login[el.dataset.path]=el.value; state.loginErr=false; },
@@ -216,10 +240,14 @@ const App = {
     finally{ state.busy=false; render(); }
   },
   onLoginKey(e){ if(e.key==='Enter') App.onLogin(); },
-  async logout(){ if(sb) await sb.auth.signOut(); state.loggedIn=false; state.view='home'; render(); },
+  async logout(){ if(sb) await sb.auth.signOut(); state.loggedIn=false; state.view='home'; state.menuOpen=false; render(); },
 
-  // org (autosave)
-  async onOrgInput(el){ setPath(state.org, el.dataset.path, el.value); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; flashSaved(); }catch(e){ notifyError(e); } },
+  // ---- per-block Edit / Save / Cancel ----
+  // organization
+  editOrg(){ App._resetEdit(); state.snap=JSON.parse(JSON.stringify(state.org)); state.edit.org=true; render(); },
+  cancelOrg(){ if(state.snap) state.org=state.snap; state.snap=null; state.edit.org=false; render(); },
+  onOrgField(el){ setPath(state.org, el.dataset.path, el.value); },
+  async saveOrg(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.org=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
 
   // activities
   openAdd(){ state.formOpen=true; state.editingId=null; state.form={title:'',desc:'',date:today(),images:[]}; render(); },
@@ -246,16 +274,27 @@ const App = {
   },
   async deleteActivity(id){ if(!window.confirm(T.confirm_del)) return; try{ const { error }=await sb.from('activities').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
-  // members
-  async onMemberInput(el){ const i=+el.dataset.idx,fld=el.dataset.field; state.members[i][fld]=el.value; const m=state.members[i]; try{ const { error }=await sb.from('members').update({ [fld]:el.value }).eq('id',m.id); if(error) throw error; flashSaved(); }catch(e){ notifyError(e); } },
-  onMemberPhoto(el){ const i=+el.dataset.idx; const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(async url=>{ const m=state.members[i]; const { error }=await sb.from('members').update({ photo:url }).eq('id',m.id); if(error) throw error; await loadData(); }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
-  async addMember(){ try{ const sort=state.members.length; const { error }=await sb.from('members').insert({ name:'', role:'', bio:'', photo:'', sort }); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
-  async removeMember(i){ if(!window.confirm(T.confirm_del_member)) return; const m=state.members[i]; try{ const { error }=await sb.from('members').delete().eq('id',m.id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
+  // team (members) — popup form (add + edit)
+  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', bio:'', photo:'' }; render(); },
+  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, bio:m.bio, photo:m.photo||'' }; render(); },
+  closeMemberForm(){ state.memForm.open=false; render(); },
+  onMemForm(el){ state.memForm[el.dataset.path]=el.value; if(el.dataset.path==='name') toggleSave('saveMemBtn', state.memForm.name.trim().length>0); },
+  onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
+  async saveMemberForm(){ const f=state.memForm; if(!sb||!f.name.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('members').update({ name:f.name, role:f.role, bio:f.bio, photo:f.photo }).eq('id',f.id); if(error) throw error; } else { const sort=state.members.length; const { error }=await sb.from('members').insert({ name:f.name, role:f.role, bio:f.bio, photo:f.photo, sort }); if(error) throw error; } await loadData(); state.memForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  async removeMember(id){ if(!window.confirm(T.confirm_del_member)) return; try{ const { error }=await sb.from('members').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
-  // milestones
-  async onMilestoneInput(el){ const i=+el.dataset.idx,fld=el.dataset.field; state.milestones[i][fld]=el.value; const m=state.milestones[i]; const col= fld==='desc'?'description':fld; try{ const { error }=await sb.from('milestones').update({ [col]:el.value }).eq('id',m.id); if(error) throw error; flashSaved(); }catch(e){ notifyError(e); } },
-  async addMilestone(){ try{ const sort=state.milestones.length; const { error }=await sb.from('milestones').insert({ year:'', title:'', description:'', sort }); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
-  async removeMilestone(i){ if(!window.confirm(T.confirm_del_ms)) return; const m=state.milestones[i]; try{ const { error }=await sb.from('milestones').delete().eq('id',m.id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
+  // our story — story block + per-milestone edit
+  editStory(){ App._resetEdit(); state.snap={ story:(state.org.history&&state.org.history.story)||'' }; state.edit.story=true; render(); },
+  cancelStory(){ if(state.snap){ if(!state.org.history) state.org.history={}; state.org.history.story=state.snap.story; } state.snap=null; state.edit.story=false; render(); },
+  onStoryField(el){ setPath(state.org, el.dataset.path, el.value); },
+  async saveStory(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.story=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  // milestones — popup form (add + edit)
+  openMilestoneAdd(){ App._resetEdit(); state.msForm={ open:true, id:null, year:'', title:'', desc:'' }; render(); },
+  openMilestoneEdit(id){ const m=state.milestones.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.msForm={ open:true, id:m.id, year:m.year, title:m.title, desc:m.desc }; render(); },
+  closeMilestoneForm(){ state.msForm.open=false; render(); },
+  onMsForm(el){ state.msForm[el.dataset.path]=el.value; if(el.dataset.path==='title') toggleSave('saveMsBtn', state.msForm.title.trim().length>0); },
+  async saveMilestoneForm(){ const f=state.msForm; if(!sb||!f.title.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('milestones').update({ year:f.year, title:f.title, description:f.desc }).eq('id',f.id); if(error) throw error; } else { const sort=state.milestones.length; const { error }=await sb.from('milestones').insert({ year:f.year, title:f.title, description:f.desc, sort }); if(error) throw error; } await loadData(); state.msForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  async removeMilestone(id){ if(!window.confirm(T.confirm_del_ms)) return; try{ const { error }=await sb.from('milestones').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // detail
   openDetail(id){ state.detailOpen=true; state.detailId=id; state.di=0; render(); },
@@ -273,12 +312,20 @@ function updateSaveBtn(){
   btn.style.background=valid?'var(--primary)':'#B9D6C5';
   btn.style.cursor=valid?'pointer':'not-allowed';
 }
+function toggleSave(id, valid){ const b=document.getElementById(id); if(!b) return; b.disabled=!valid; b.style.background=valid?'var(--primary)':'#B9D6C5'; b.style.cursor=valid?'pointer':'not-allowed'; }
+function modalSaveStyle(valid){ const on=valid&&!state.busy; return "padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:"+(on?'var(--primary)':'#B9D6C5')+";cursor:"+(on?'pointer':'not-allowed'); }
 
 /* ============================================================
    STYLE SNIPPETS
    ============================================================ */
 function navTab(on){ return "padding:8px 13px;border:none;background:"+(on?'var(--primary-soft)':'transparent')+";color:"+(on?'var(--primary-strong)':'#3a4d44')+";font-size:14px;font-weight:"+(on?'600':'500')+";cursor:pointer;border-radius:9px"; }
 function subTab(on){ return "padding:8px 16px;border:none;background:"+(on?'var(--primary)':'#EAF4EE')+";color:"+(on?'#fff':'#3a4d44')+";font-size:13.5px;font-weight:600;cursor:pointer;border-radius:10px"; }
+const PENCIL='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>';
+function editBtn(onclick,label){ return `<button class="chip-edit" onclick="${onclick}" title="${attr(label||T.edit)}" style="display:inline-flex;align-items:center;gap:6px;background:#EAF4EE;color:#3a4d44;border:none;padding:8px 12px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">${PENCIL}${label?'<span>'+esc(label)+'</span>':''}</button>`; }
+function saveBtnEl(onclick){ return `<button onclick="${onclick}" ${state.busy?'disabled':''} style="padding:10px 20px;border:none;border-radius:10px;font-weight:600;font-size:14px;color:#fff;background:${state.busy?'#B9D6C5':'var(--primary)'};cursor:${state.busy?'not-allowed':'pointer'}">${state.busy?T.saving:T.save}</button>`; }
+function cancelBtnEl(onclick){ return `<button onclick="${onclick}" style="padding:10px 18px;border:1px solid #D2E5D9;border-radius:10px;font-weight:600;font-size:14px;background:#fff;color:#3a4d44;cursor:pointer">${T.cancel}</button>`; }
+function delBtnEl(onclick){ return `<button class="chip-del" onclick="${onclick}" title="${attr(T.delete)}" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:14px;flex:none">✕</button>`; }
+function infoRow(label,val){ return `<div style="padding:11px 0;border-top:1px solid #EFF6F1"><div style="font-size:12px;font-weight:600;color:#8aa093">${esc(label)}</div><div style="font-size:14.5px;color:#1F2D26;margin-top:3px;white-space:pre-wrap;line-height:1.6">${esc(val||'—')}</div></div>`; }
 
 /* ============================================================
    VIEW FRAGMENTS
@@ -303,27 +350,38 @@ function activityCard(a){
 
 function nav(){
   const v=state.view;
-  return `
-  <header style="position:sticky;top:0;z-index:50;background:rgba(243,249,245,.85);backdrop-filter:blur(12px);border-bottom:1px solid #DCEBE2">
-    <div style="max-width:1180px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:16px">
-      <div onclick="App.goHome()" style="display:flex;align-items:center;gap:11px;cursor:pointer">
-        <div style="width:42px;height:42px;border-radius:13px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:17px;letter-spacing:.5px;box-shadow:0 6px 16px -6px var(--primary)">${esc(state.org.short)}</div>
-        <div>
-          <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:15px;line-height:1.15">${esc(state.org.nameFull.en)}</div>
-          <div style="font-size:11px;color:#6F8479;margin-top:1px">${esc(state.org.tagline.en)}</div>
-        </div>
-      </div>
-      <nav style="margin-left:auto;display:flex;align-items:center;gap:4px">
+  const links = `
         <button onclick="App.goHome()" style="${navTab(v==='home')}">${T.nav_home}</button>
         <button onclick="App.goActivities()" style="${navTab(v==='activities')}">${T.nav_activities}</button>
         <button onclick="App.goHistory()" style="${navTab(v==='history')}">${T.nav_history}</button>
-        <button onclick="App.goMembers()" style="${navTab(v==='members')}">${T.nav_members}</button>
-        <div style="width:1px;height:22px;background:#DCEBE2;margin:0 6px"></div>
+        <button onclick="App.goMembers()" style="${navTab(v==='members')}">${T.nav_members}</button>`;
+  const cta = `
         ${v!=='admin'?`<button class="btn-primary" onclick="App.goAdmin()" style="background:var(--primary);color:#fff;padding:9px 16px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap">${T.admin}</button>`:''}
         ${v==='admin'?`<button onclick="App.goHome()" style="background:transparent;color:var(--primary);padding:8px 13px;border:1px solid var(--primary);border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer">${T.view_site}</button>`:''}
-        ${state.loggedIn?`<button onclick="App.logout()" style="background:transparent;color:#6F8479;padding:8px 12px;border:none;font-size:13.5px;cursor:pointer">${T.logout}</button>`:''}
+        ${state.loggedIn?`<button onclick="App.logout()" style="background:transparent;color:#6F8479;padding:8px 12px;border:none;font-size:13.5px;cursor:pointer;text-align:left">${T.logout}</button>`:''}`;
+  return `
+  <header style="position:sticky;top:0;z-index:50;background:rgba(243,249,245,.85);backdrop-filter:blur(12px);border-bottom:1px solid #DCEBE2">
+    <div class="nav-wrap" style="max-width:1180px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:16px">
+      <div onclick="App.goHome()" style="display:flex;align-items:center;gap:11px;cursor:pointer;min-width:0">
+        <div style="width:42px;height:42px;border-radius:13px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:17px;letter-spacing:.5px;box-shadow:0 6px 16px -6px var(--primary);flex:none">${esc(state.org.short)}</div>
+        <div style="min-width:0">
+          <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.nameFull.en)}</div>
+          <div style="font-size:11px;color:#6F8479;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.tagline.en)}</div>
+        </div>
+      </div>
+      <nav class="nav-desktop" style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        ${links}
+        <div style="width:1px;height:22px;background:#DCEBE2;margin:0 6px"></div>
+        ${cta}
       </nav>
+      <button class="nav-toggle" onclick="App.toggleMenu()" aria-label="Menu">${state.menuOpen?'✕':'☰'}</button>
     </div>
+    ${state.menuOpen?`
+    <div class="nav-mobile" style="flex-direction:column;align-items:stretch;gap:6px;padding:8px 16px 16px;border-top:1px solid #DCEBE2;background:rgba(243,249,245,.97);animation:fadeIn .2s ease both">
+      ${links}
+      <div style="height:1px;background:#DCEBE2;margin:6px 0"></div>
+      ${cta}
+    </div>`:''}
   </header>`;
 }
 
@@ -349,7 +407,7 @@ function homeView(){
   <main>
     <section style="position:relative;overflow:hidden">
       <div style="position:absolute;inset:0;background:radial-gradient(110% 80% at 88% -15%, var(--primary-soft), transparent 58%)"></div>
-      <div class="resp-grid" style="max-width:1180px;margin:0 auto;padding:70px 24px 58px;display:grid;gap:50px;align-items:center;position:relative">
+      <div class="resp-grid hero-sec" style="max-width:1180px;margin:0 auto;padding:70px 24px 58px;display:grid;gap:50px;align-items:center;position:relative">
         <div style="animation:fadeUp .6s ease both">
           <span style="display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #DCEBE2;color:var(--primary);padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600">
             <span style="width:7px;height:7px;border-radius:50%;background:var(--primary)"></span>${T.hero_badge}
@@ -376,7 +434,7 @@ function homeView(){
         </div>
         <button class="btn-outline" onclick="App.goActivities()" style="background:#fff;color:var(--primary);border:1px solid #D2E5D9;padding:10px 18px;border-radius:11px;font-weight:600;font-size:14px;cursor:pointer">${T.view_all} →</button>
       </div>
-      ${preview.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:26px">${preview.map(activityCard).join('')}</div>`
+      ${preview.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:26px">${preview.map(activityCard).join('')}</div>`
         :`<div style="text-align:center;padding:60px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:20px;color:#8aa093">${T.empty_pub}</div>`}
     </section>
   </main>`;
@@ -393,7 +451,7 @@ function activitiesView(){
       <h1 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:clamp(28px,3.2vw,40px);margin:10px 0 0;letter-spacing:-.4px">${T.act_title}</h1>
       <p style="color:#6F8479;font-size:15px;margin:8px 0 0">${T.act_sub}</p>
     </div>
-    ${sorted.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:26px">${sorted.map(activityCard).join('')}</div>`
+    ${sorted.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:26px">${sorted.map(activityCard).join('')}</div>`
       :`<div style="text-align:center;padding:70px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:20px;color:#8aa093">${T.empty_pub}</div>`}
   </main>`;
 }
@@ -456,7 +514,7 @@ function membersView(){
       <h1 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:clamp(28px,3.2vw,40px);margin:10px 0 0;letter-spacing:-.4px">${T.mem_title}</h1>
       <p style="color:#6F8479;font-size:15px;margin:8px 0 0">${T.mem_sub}</p>
     </div>
-    ${list.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:24px">${list.map(card).join('')}</div>`
+    ${list.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:24px">${list.map(card).join('')}</div>`
       :`<div style="text-align:center;padding:70px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:20px;color:#8aa093">${T.empty_members}</div>`}
   </main>`;
 }
@@ -520,29 +578,43 @@ function dashView(){
   const tab=state.adminTab;
   const sorted=sortedActivities(); sorted.forEach((a,i)=>a._i=i);
 
-  const orgPanel=`
+  const o=state.org;
+  const orgPanel = state.edit.org ? `
     <div style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;padding:26px;max-width:620px;animation:fadeIn .2s ease both">
       <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0 0 20px">${T.dash_orginfo}</h3>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_short}</label>
-        <input class="field" value="${attr(state.org.short)}" data-path="short" onchange="App.onOrgInput(this)" maxlength="4" style="width:120px;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+        <input class="field" value="${attr(o.short)}" data-path="short" oninput="App.onOrgField(this)" maxlength="4" style="width:120px;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_namefull}</label>
-        <input class="field" value="${attr(state.org.nameFull.en)}" data-path="nameFull.en" onchange="App.onOrgInput(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+        <input class="field" value="${attr(o.nameFull.en)}" data-path="nameFull.en" oninput="App.onOrgField(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_tagline}</label>
-        <input class="field" value="${attr(state.org.tagline.en)}" data-path="tagline.en" onchange="App.onOrgInput(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+        <input class="field" value="${attr(o.tagline.en)}" data-path="tagline.en" oninput="App.onOrgField(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.org_about}</label>
-        <textarea class="field" data-path="about.en" onchange="App.onOrgInput(this)" rows="4" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none;line-height:1.6">${esc(state.org.about.en)}</textarea>
+        <textarea class="field" data-path="about.en" oninput="App.onOrgField(this)" rows="4" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none;line-height:1.6">${esc(o.about.en)}</textarea>
       </div>
       <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:6px 0 6px">${T.org_contact}</label>
-      <input class="field" value="${attr(state.org.contact.place)}" data-path="contact.place" onchange="App.onOrgInput(this)" placeholder="${attr(T.c_place)}" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none;margin-bottom:10px">
-      <input class="field" value="${attr(state.org.contact.email)}" data-path="contact.email" onchange="App.onOrgInput(this)" placeholder="${attr(T.c_email)}" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
-      <div style="margin-top:14px;font-size:12px;color:#8aa093">↻ ${T.autosave}</div>
+      <input class="field" value="${attr(o.contact.place)}" data-path="contact.place" oninput="App.onOrgField(this)" placeholder="${attr(T.c_place)}" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none;margin-bottom:10px">
+      <input class="field" value="${attr(o.contact.email)}" data-path="contact.email" oninput="App.onOrgField(this)" placeholder="${attr(T.c_email)}" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+      <div style="display:flex;gap:10px;margin-top:22px">${saveBtnEl('App.saveOrg()')}${cancelBtnEl('App.cancelOrg()')}</div>
+    </div>`
+  : `
+    <div style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;padding:26px;max-width:620px;animation:fadeIn .2s ease both">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px">
+        <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0">${T.dash_orginfo}</h3>
+        ${editBtn('App.editOrg()', T.edit)}
+      </div>
+      ${infoRow(T.org_short, o.short)}
+      ${infoRow(T.org_namefull, o.nameFull.en)}
+      ${infoRow(T.org_tagline, o.tagline.en)}
+      ${infoRow(T.org_about, o.about.en)}
+      ${infoRow(T.c_place, o.contact.place)}
+      ${infoRow(T.c_email, o.contact.email)}
     </div>`;
 
   const actRow=(a)=>{
@@ -571,26 +643,39 @@ function dashView(){
         :`<div style="text-align:center;padding:54px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:16px;color:#8aa093;font-size:14.5px">${T.empty_admin}</div>`}
     </div>`;
 
-  const histPanel=`
-    <div style="animation:fadeIn .2s ease both">
+  const story=(state.org.history&&state.org.history.story)||'';
+  const storyBlock = state.edit.story ? `
       <div style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;padding:24px;max-width:760px;margin-bottom:22px">
         <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 8px">${T.hist_story}</label>
-        <textarea class="field" data-path="history.story" onchange="App.onOrgInput(this)" rows="6" style="width:100%;padding:12px 14px;border:1px solid #D2E5D9;border-radius:12px;font-size:14.5px;background:#F7FBF9;outline:none;line-height:1.7">${esc((state.org.history&&state.org.history.story)||'')}</textarea>
-      </div>
+        <textarea class="field" data-path="history.story" oninput="App.onStoryField(this)" rows="6" style="width:100%;padding:12px 14px;border:1px solid #D2E5D9;border-radius:12px;font-size:14.5px;background:#F7FBF9;outline:none;line-height:1.7">${esc(story)}</textarea>
+        <div style="display:flex;gap:10px;margin-top:14px">${saveBtnEl('App.saveStory()')}${cancelBtnEl('App.cancelStory()')}</div>
+      </div>`
+    : `
+      <div style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;padding:24px;max-width:760px;margin-bottom:22px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+          <label style="font-size:12.5px;font-weight:600;color:#6F8479">${T.hist_story}</label>
+          ${editBtn('App.editStory()', T.edit)}
+        </div>
+        <p style="margin:0;font-size:14.5px;line-height:1.7;color:#3a4d44;white-space:pre-wrap">${esc(story||'—')}</p>
+      </div>`;
+  const msBlock = state.milestones.map((m)=> `
+          <div class="ms-row" style="background:#fff;border:1px solid #DCEBE2;border-radius:14px;padding:14px;display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;max-width:760px">
+            <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:18px;color:var(--primary)">${esc(m.year||'—')}</div>
+            <div style="min-width:0">
+              <div style="font-weight:600;font-size:15px">${esc(m.title||'—')}</div>
+              <p style="margin:4px 0 0;font-size:13.5px;line-height:1.6;color:#5b6e63">${esc(m.desc)}</p>
+            </div>
+            <div style="display:flex;gap:8px;flex:none">${editBtn("App.openMilestoneEdit('"+m.id+"')")}${delBtnEl("App.removeMilestone('"+m.id+"')")}</div>
+          </div>`).join('');
+  const histPanel=`
+    <div style="animation:fadeIn .2s ease both">
+      ${storyBlock}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;max-width:760px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0">${T.timeline_title}</h3>
-        <button class="btn-primary" onclick="App.addMilestone()" style="background:var(--primary);color:#fff;padding:9px 15px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer">＋ ${T.m_add}</button>
+        <button class="btn-primary" onclick="App.openMilestoneAdd()" style="background:var(--primary);color:#fff;padding:9px 15px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer">＋ ${T.m_add}</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:11px;max-width:760px">
-        ${state.milestones.map((m,i)=>`
-          <div style="background:#fff;border:1px solid #DCEBE2;border-radius:14px;padding:14px;display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:start">
-            <input class="field" value="${attr(m.year)}" data-idx="${i}" data-field="year" onchange="App.onMilestoneInput(this)" placeholder="${attr(T.m_year)}" style="width:100%;padding:9px 10px;border:1px solid #D2E5D9;border-radius:9px;font-size:14px;background:#F7FBF9;outline:none">
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <input class="field" value="${attr(m.title)}" data-idx="${i}" data-field="title" onchange="App.onMilestoneInput(this)" placeholder="${attr(T.m_title)}" style="width:100%;padding:9px 10px;border:1px solid #D2E5D9;border-radius:9px;font-size:14px;background:#F7FBF9;outline:none">
-              <textarea class="field" data-idx="${i}" data-field="desc" onchange="App.onMilestoneInput(this)" rows="2" placeholder="${attr(T.m_desc)}" style="width:100%;padding:9px 10px;border:1px solid #D2E5D9;border-radius:9px;font-size:14px;background:#F7FBF9;outline:none;line-height:1.6">${esc(m.desc)}</textarea>
-            </div>
-            <button onclick="App.removeMilestone(${i})" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px">✕</button>
-          </div>`).join('')}
+      <div style="display:flex;flex-direction:column;gap:11px">
+        ${msBlock}
       </div>
     </div>`;
 
@@ -598,24 +683,22 @@ function dashView(){
     <div style="animation:fadeIn .2s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0">${T.dash_memmgr}</h3>
-        <button class="btn-primary" onclick="App.addMember()" style="background:var(--primary);color:#fff;padding:10px 17px;border:none;border-radius:11px;font-weight:600;font-size:14px;cursor:pointer">＋ ${T.mb_add}</button>
+        <button class="btn-primary" onclick="App.openMemberAdd()" style="background:var(--primary);color:#fff;padding:10px 17px;border:none;border-radius:11px;font-weight:600;font-size:14px;cursor:pointer">＋ ${T.mb_add}</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         ${state.members.map((m,i)=>{
           const has=!!m.photo; const av=has?bg(m.photo):('background:'+GRADS[i%GRADS.length]);
           return `
-          <div style="background:#fff;border:1px solid #DCEBE2;border-radius:16px;padding:16px;display:flex;gap:16px;align-items:flex-start">
-            <label style="width:88px;height:88px;border-radius:14px;flex:none;cursor:pointer;background:#E8F2EC;${av};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
-              ${!has?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:26px;color:rgba(255,255,255,.92)">${esc(initials(m.name))}</span>`:''}
-              <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(18,40,28,.55);color:#fff;font-size:10px;text-align:center;padding:3px">${T.mb_photo}</span>
-              <input type="file" accept="image/*" data-idx="${i}" onchange="App.onMemberPhoto(this)" style="display:none">
-            </label>
-            <div style="flex:1;display:flex;flex-direction:column;gap:9px;min-width:0">
-              <input class="field" value="${attr(m.name)}" data-idx="${i}" data-field="name" onchange="App.onMemberInput(this)" placeholder="${attr(T.mb_name)}" style="width:100%;padding:9px 11px;border:1px solid #D2E5D9;border-radius:9px;font-size:14.5px;font-weight:600;background:#F7FBF9;outline:none">
-              <input class="field" value="${attr(m.role)}" data-idx="${i}" data-field="role" onchange="App.onMemberInput(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:9px 11px;border:1px solid #D2E5D9;border-radius:9px;font-size:14px;background:#F7FBF9;outline:none">
-              <textarea class="field" data-idx="${i}" data-field="bio" onchange="App.onMemberInput(this)" rows="2" placeholder="${attr(T.mb_bio)}" style="width:100%;padding:9px 11px;border:1px solid #D2E5D9;border-radius:9px;font-size:14px;background:#F7FBF9;outline:none;line-height:1.6">${esc(m.bio)}</textarea>
+          <div class="mem-row" style="background:#fff;border:1px solid #DCEBE2;border-radius:16px;padding:16px;display:flex;gap:16px;align-items:center">
+            <div style="width:72px;height:72px;border-radius:14px;flex:none;background:#E8F2EC;${av};display:flex;align-items:center;justify-content:center;overflow:hidden">
+              ${!has?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:24px;color:rgba(255,255,255,.92)">${esc(initials(m.name))}</span>`:''}
             </div>
-            <button onclick="App.removeMember(${i})" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:14px;flex:none">✕</button>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:16px">${esc(m.name||'—')}</div>
+              <div style="color:var(--primary);font-weight:600;font-size:13.5px;margin-top:2px">${esc(m.role)}</div>
+              <p style="margin:6px 0 0;font-size:13.5px;line-height:1.6;color:#5b6e63">${esc(m.bio)}</p>
+            </div>
+            <div style="display:flex;gap:8px;flex:none">${editBtn("App.openMemberEdit('"+m.id+"')")}${delBtnEl("App.removeMember('"+m.id+"')")}</div>
           </div>`;
         }).join('')}
       </div>
@@ -662,8 +745,8 @@ function formModal(){
       <input type="file" accept="image/*" multiple onchange="App.onPickImages(this)" style="display:none">
     </label>`:'';
   return `
-  <div onclick="App.closeForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
-    <div onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:600px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+  <div class="modal-wrap" onclick="App.closeForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:600px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${state.editingId?T.edit_activity:T.add_activity}</h3>
         <button onclick="App.closeForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
@@ -698,6 +781,70 @@ function formModal(){
   </div>`;
 }
 
+function memberModal(){
+  const f=state.memForm; const has=!!f.photo; const av=has?bg(f.photo):('background:'+GRADS[0]);
+  const valid=f.name.trim().length>0;
+  return `
+  <div class="modal-wrap" onclick="App.closeMemberForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:540px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+        <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${f.id?T.mb_edit:T.mb_add}</h3>
+        <button onclick="App.closeMemberForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
+      </div>
+      <div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:16px">
+        <label style="width:96px;height:96px;border-radius:16px;flex:none;cursor:pointer;background:#E8F2EC;${av};display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+          ${!has?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:26px;color:rgba(255,255,255,.92)">${esc(initials(f.name))}</span>`:''}
+          <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(18,40,28,.55);color:#fff;font-size:10px;text-align:center;padding:3px">${T.mb_photo}</span>
+          <input type="file" accept="image/*" onchange="App.onMemFormPhoto(this)" style="display:none">
+        </label>
+        <div style="flex:1;min-width:0">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_name}</label>
+          <input class="field" value="${attr(f.name)}" data-path="name" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_name)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;margin-bottom:12px">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_role}</label>
+          <input class="field" value="${attr(f.role)}" data-path="role" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+        </div>
+      </div>
+      <div style="margin-bottom:22px">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_bio}</label>
+        <textarea class="field" data-path="bio" oninput="App.onMemForm(this)" rows="3" placeholder="${attr(T.mb_bio)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;line-height:1.6">${esc(f.bio)}</textarea>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button onclick="App.closeMemberForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
+        <button id="saveMemBtn" onclick="App.saveMemberForm()" ${valid&&!state.busy?'':'disabled'} style="${modalSaveStyle(valid)}">${state.busy?T.saving:T.save}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function milestoneModal(){
+  const f=state.msForm; const valid=f.title.trim().length>0;
+  return `
+  <div class="modal-wrap" onclick="App.closeMilestoneForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:520px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+        <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${f.id?T.m_edit:T.m_add}</h3>
+        <button onclick="App.closeMilestoneForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_year}</label>
+        <input class="field" value="${attr(f.year)}" data-path="year" oninput="App.onMsForm(this)" placeholder="${attr(T.m_year)}" style="width:160px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_title}</label>
+        <input class="field" value="${attr(f.title)}" data-path="title" oninput="App.onMsForm(this)" placeholder="${attr(T.m_title)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+      </div>
+      <div style="margin-bottom:22px">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_desc}</label>
+        <textarea class="field" data-path="desc" oninput="App.onMsForm(this)" rows="3" placeholder="${attr(T.m_desc)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;line-height:1.6">${esc(f.desc)}</textarea>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <button onclick="App.closeMilestoneForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
+        <button id="saveMsBtn" onclick="App.saveMilestoneForm()" ${valid&&!state.busy?'':'disabled'} style="${modalSaveStyle(valid)}">${state.busy?T.saving:T.save}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function detailModal(){
   const da=state.activities.find(x=>x.id===state.detailId);
   if(!da) return '';
@@ -710,9 +857,9 @@ function detailModal(){
   const thumbs=imgs.map((src,i)=>`
     <div onclick="App.detailGo(${i})" style="width:66px;height:66px;border-radius:11px;cursor:pointer;${bg(src)};${i===di?'outline:3px solid var(--primary);outline-offset:1px':'opacity:.7'}"></div>`).join('');
   return `
-  <div onclick="App.closeDetail()" style="position:fixed;inset:0;z-index:110;background:rgba(16,32,22,.66);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease both">
+  <div class="modal-wrap" onclick="App.closeDetail()" style="position:fixed;inset:0;z-index:110;background:rgba(16,32,22,.66);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease both">
     <div onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;max-width:840px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 40px 90px -30px rgba(16,32,18,.6);animation:pop .35s ease both">
-      <div style="position:relative;height:380px;background:#E8F2EC;${curStyle}">
+      <div class="detail-hero" style="position:relative;height:380px;background:#E8F2EC;${curStyle}">
         ${!has?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:46px;color:rgba(255,255,255,.92)">${esc(state.org.short)}</span></div>`:''}
         <button onclick="App.closeDetail()" style="position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.92);border:none;cursor:pointer;font-size:17px;color:#3a4d44;display:flex;align-items:center;justify-content:center">✕</button>
         ${multi?`
@@ -776,6 +923,8 @@ function render(){
   if(isPublic) html += footer();
   html += `</div>`;
   if(state.formOpen) html += formModal();
+  if(state.memForm.open) html += memberModal();
+  if(state.msForm.open) html += milestoneModal();
   if(state.detailOpen) html += detailModal();
   html += errorToast();
 

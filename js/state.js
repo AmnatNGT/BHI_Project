@@ -11,7 +11,7 @@ let state = {
   detailOpen: false, detailId: null, di: 0,
   orgSaved: false, menuOpen: false,
   edit: { org:false, story:false }, snap: null,
-  memForm: { open:false, id:null, name:'', role:'', bio:'', photo:'' },
+  memForm: { open:false, id:null, name:'', role:'', photo:'' },
   msForm: { open:false, id:null, year:'', title:'', desc:'' },
   loading: true, busy: false, errorMsg: '',
   org: emptyOrg(), activities: [], members: [], milestones: []
@@ -54,6 +54,6 @@ async function loadData(){
   if(err) throw err;
   state.org = orgFromRow(orgR.data);
   state.activities = (actR.data||[]).map(actFromRow);
-  state.members = (memR.data||[]).map(m=>({ id:m.id, name:m.name||'', role:m.role||'', bio:m.bio||'', photo:m.photo||'', sort:m.sort||0 }));
+  state.members = (memR.data||[]).map(m=>({ id:m.id, name:m.name||'', role:m.role||'', photo:m.photo||'', sort:m.sort||0 }));
   state.milestones = (msR.data||[]).map(msFromRow);
 }

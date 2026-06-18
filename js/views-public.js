@@ -119,7 +119,6 @@ function membersView(){
       <div style="padding:20px 22px 24px">
         <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:19px">${esc(m.name)}</div>
         <div style="color:var(--primary);font-weight:600;font-size:14px;margin-top:4px">${esc(m.role)}</div>
-        <p style="margin:12px 0 0;font-size:14.5px;line-height:1.65;color:#5b6e63">${esc(m.bio)}</p>
       </div>
     </div>`;
   };

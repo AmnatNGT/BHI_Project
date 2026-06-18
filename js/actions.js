@@ -66,12 +66,12 @@ const App = {
   async deleteActivity(id){ if(!window.confirm(T.confirm_del)) return; try{ const { error }=await sb.from('activities').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // team (members) — popup form (add + edit)
-  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', bio:'', photo:'' }; render(); },
-  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, bio:m.bio, photo:m.photo||'' }; render(); },
+  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', photo:'' }; render(); },
+  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'' }; render(); },
   closeMemberForm(){ state.memForm.open=false; render(); },
   onMemForm(el){ state.memForm[el.dataset.path]=el.value; if(el.dataset.path==='name') toggleSave('saveMemBtn', state.memForm.name.trim().length>0); },
   onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
-  async saveMemberForm(){ const f=state.memForm; if(!sb||!f.name.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('members').update({ name:f.name, role:f.role, bio:f.bio, photo:f.photo }).eq('id',f.id); if(error) throw error; } else { const sort=state.members.length; const { error }=await sb.from('members').insert({ name:f.name, role:f.role, bio:f.bio, photo:f.photo, sort }); if(error) throw error; } await loadData(); state.memForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  async saveMemberForm(){ const f=state.memForm; if(!sb||!f.name.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('members').update({ name:f.name, role:f.role, photo:f.photo }).eq('id',f.id); if(error) throw error; } else { const sort=state.members.length; const { error }=await sb.from('members').insert({ name:f.name, role:f.role, photo:f.photo, sort }); if(error) throw error; } await loadData(); state.memForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
   async removeMember(id){ if(!window.confirm(T.confirm_del_member)) return; try{ const { error }=await sb.from('members').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // our story — story block + per-milestone edit

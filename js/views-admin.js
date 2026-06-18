@@ -149,7 +149,6 @@ function dashView(){
             <div style="flex:1;min-width:0">
               <div style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:16px">${esc(m.name||'—')}</div>
               <div style="color:var(--primary);font-weight:600;font-size:13.5px;margin-top:2px">${esc(m.role)}</div>
-              <p style="margin:6px 0 0;font-size:13.5px;line-height:1.6;color:#5b6e63">${esc(m.bio)}</p>
             </div>
             <div style="display:flex;gap:8px;flex:none">${editBtn("App.openMemberEdit('"+m.id+"')")}${delBtnEl("App.removeMember('"+m.id+"')")}</div>
           </div>`;

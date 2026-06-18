@@ -77,10 +77,6 @@ function memberModal(){
           <input class="field" value="${attr(f.role)}" data-path="role" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
         </div>
       </div>
-      <div style="margin-bottom:22px">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_bio}</label>
-        <textarea class="field" data-path="bio" oninput="App.onMemForm(this)" rows="3" placeholder="${attr(T.mb_bio)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;line-height:1.6">${esc(f.bio)}</textarea>
-      </div>
       <div style="display:flex;gap:12px;justify-content:flex-end">
         <button onclick="App.closeMemberForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
         <button id="saveMemBtn" onclick="App.saveMemberForm()" ${valid&&!state.busy?'':'disabled'} style="${modalSaveStyle(valid)}">${state.busy?T.saving:T.save}</button>

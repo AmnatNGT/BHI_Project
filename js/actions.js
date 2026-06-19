@@ -3,196 +3,499 @@
    ACTIONS — the App controller object (all onclick/oninput handlers)
    ============================================================ */
 
+// Holds the in-progress drag state while a team member row is being dragged
+// (see "team (members) — drag to reorder" below). null whenever nothing is
+// being dragged.
 let dragCtx = null;
 
 const App = {
-  // nav
-  toggleMenu(){ state.menuOpen=!state.menuOpen; render(); },
-  goHome(){ state.view='home'; state.menuOpen=false; render(); },
-  goActivities(){ state.view='activities'; state.menuOpen=false; render(); },
-  goHistory(){ state.view='history'; state.menuOpen=false; render(); },
-  goMembers(){ state.view='members'; state.menuOpen=false; render(); },
-  goAdmin(){ state.view='admin'; state.menuOpen=false; render(); },
-  _resetEdit(){ state.edit={ org:false, story:false }; state.snap=null; if(state.memForm) state.memForm.open=false; if(state.msForm) state.msForm.open=false; },
-  adminToOrg(){ App._resetEdit(); state.adminTab='org'; render(); },
-  adminToActs(){ App._resetEdit(); state.adminTab='activities'; render(); },
-  adminToHist(){ App._resetEdit(); state.adminTab='history'; render(); },
-  adminToMem(){ App._resetEdit(); state.adminTab='members'; render(); },
+  // ---- navigation ----
+  toggleMenu() { state.menuOpen = !state.menuOpen; render(); },
+  goHome() { state.view = 'home'; state.menuOpen = false; render(); },
+  goActivities() { state.view = 'activities'; state.menuOpen = false; render(); },
+  goHistory() { state.view = 'history'; state.menuOpen = false; render(); },
+  goMembers() { state.view = 'members'; state.menuOpen = false; render(); },
+  goAdmin() { state.view = 'admin'; state.menuOpen = false; render(); },
 
-  // login (Supabase Auth)
-  onLoginInput(el){ state.login[el.dataset.path]=el.value; state.loginErr=false; },
-  async onLogin(){
-    if(!sb) return;
+  // Closes any open inline-edit panel/popup form. Called when switching admin
+  // tabs so leftover edit state from one tab doesn't bleed into another.
+  _resetEdit() {
+    state.edit = { org: false, story: false };
+    state.snap = null;
+    if (state.memForm) state.memForm.open = false;
+    if (state.msForm) state.msForm.open = false;
+  },
+  adminToOrg() { App._resetEdit(); state.adminTab = 'org'; render(); },
+  adminToActs() { App._resetEdit(); state.adminTab = 'activities'; render(); },
+  adminToHist() { App._resetEdit(); state.adminTab = 'history'; render(); },
+  adminToMem() { App._resetEdit(); state.adminTab = 'members'; render(); },
+
+  // ---- login (Supabase Auth) ----
+  onLoginInput(inputEl) { state.login[inputEl.dataset.path] = inputEl.value; state.loginErr = false; },
+  async onLogin() {
+    if (!sb) return;
     const { user, pass } = state.login;
-    state.busy=true;
-    const btn=document.getElementById('login-btn');
-    if(btn){ btn.disabled=true; btn.textContent=T.loading; }
-    try{
-      const { error } = await sb.auth.signInWithPassword({ email:user.trim(), password:pass });
-      if(error){ state.loginErr=true; }
-      else { state.loggedIn=true; state.loginErr=false; state.login={user:'',pass:''}; await loadData(); }
-    }catch(e){ state.loginErr=true; }
-    finally{ state.busy=false; render(); }
-  },
-  onLoginKey(e){ if(e.key==='Enter') App.onLogin(); },
-  async logout(){ if(sb) await sb.auth.signOut(); state.loggedIn=false; state.view='home'; state.menuOpen=false; render(); },
-
-  // ---- per-block Edit / Save / Cancel ----
-  // organization
-  editOrg(){ App._resetEdit(); state.snap=JSON.parse(JSON.stringify(state.org)); state.edit.org=true; render(); },
-  cancelOrg(){ if(state.snap) state.org=state.snap; state.snap=null; state.edit.org=false; render(); },
-  onOrgField(el){ setPath(state.org, el.dataset.path, el.value); },
-  onOrgLogo(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'org')).then(url=>{ state.org.logo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
-  removeOrgLogo(){ state.org.logo=''; render(); },
-  async saveOrg(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.org=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
-
-  // activities
-  openAdd(){ state.errorMsg=''; state.formOpen=true; state.editingId=null; state.form={title:'',desc:'',date:today(),images:[]}; render(); },
-  openEdit(id){ const a=state.activities.find(x=>x.id===id); if(!a) return; state.errorMsg=''; state.formOpen=true; state.editingId=id; state.form={title:a.title,desc:a.desc,date:a.date,images:(a.images||[]).slice()}; render(); },
-  closeForm(){ state.formOpen=false; render(); },
-  onFormInput(el){ state.form[el.dataset.path]=el.value; if(el.dataset.path==='title'||el.dataset.path==='date') updateSaveBtn(); },
-  removeFormImage(i){ state.form.images=state.form.images.filter((_,idx)=>idx!==i); render(); },
-  onPickImages(el){
-    const files=Array.from(el.files||[]); el.value='';
-    const remaining=30-state.form.images.length; const take=files.slice(0,Math.max(0,remaining));
-    Promise.all(take.map(f=>resize(f))).then(urls=>{ state.form.images=state.form.images.concat(urls.filter(Boolean)); render(); });
-  },
-  async saveActivity(){
-    const f=state.form; if(!f.title.trim()||!f.date.trim()||!sb) return;
-    state.busy=true; render();
-    try{
-      const urls=[];
-      for(const img of f.images){ urls.push(img.indexOf('data:')===0 ? await uploadImage(img,'activities') : img); }
-      if(state.editingId){ const { error }=await sb.from('activities').update({ title:f.title, description:f.desc, date:f.date||null, images:urls }).eq('id',state.editingId); if(error) throw error; }
-      else { const { error }=await sb.from('activities').insert({ title:f.title, description:f.desc, date:f.date||today(), images:urls }); if(error) throw error; }
-      await loadData(); state.formOpen=false;
-    }catch(e){ notifyError(e); }
-    finally{ state.busy=false; render(); }
-  },
-  async deleteActivity(id){ if(!window.confirm(T.confirm_del)) return; try{ const { error }=await sb.from('activities').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
-
-  // team (members) — popup form (add + edit)
-  openMemberAdd(){ App._resetEdit(); state.errorMsg=''; state.memForm={ open:true, id:null, name:'', role:'', photo:'', sort:state.members.length+1 }; render(); },
-  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.errorMsg=''; state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'', sort:(m.sort||0)+1 }; render(); },
-  closeMemberForm(){ state.memForm.open=false; render(); },
-  onMemForm(el){ state.memForm[el.dataset.path]=el.value; const f=state.memForm; toggleSave('saveMemBtn', f.name.trim().length>0 && f.role.trim().length>0 && String(f.sort).trim().length>0); },
-  onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
-  async saveMemberForm(){
-    const f=state.memForm; if(!sb||!f.name.trim()||!f.role.trim()||!String(f.sort).trim()) return;
-    state.busy=true; render();
-    try{
-      const sort=Math.max(1,parseInt(f.sort,10)||1)-1;
-      if(f.id){
-        const { error }=await sb.from('members').update({ name:f.name, role:f.role, photo:f.photo, sort }).eq('id',f.id);
-        if(error) throw error;
+    state.busy = true;
+    // Patch the button directly so it shows a loading label immediately,
+    // before the await below resolves (render() only happens after).
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = T.loading; }
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email: user.trim(), password: pass });
+      if (error) {
+        state.loginErr = true;
       } else {
-        const { error }=await sb.from('members').insert({ name:f.name, role:f.role, photo:f.photo, sort });
-        if(error) throw error;
+        state.loggedIn = true;
+        state.loginErr = false;
+        state.login = { user: '', pass: '' };
+        await loadData();
       }
-      await loadData(); state.memForm.open=false; flashSaved();
-    }catch(e){ notifyError(e); } finally{ state.busy=false; render(); }
-  },
-  async removeMember(id){ if(!window.confirm(T.confirm_del_member)) return; try{ const { error }=await sb.from('members').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
-
-  // team (members) — drag to reorder
-  memDragStart(e,id){
-    e.preventDefault();
-    const listEl=document.querySelector('.mem-list'); if(!listEl) return;
-    const rows=Array.from(listEl.querySelectorAll('.mem-row'));
-    const row=rows.find(r=>r.dataset.id===id); if(!row) return;
-    const order=state.members.map(m=>m.id);
-    const startIndex=order.indexOf(id);
-    const step=row.getBoundingClientRect().height+12;
-    dragCtx={ id, rows, order, startIndex, currentIndex:startIndex, startY:e.clientY, step };
-    row.style.zIndex='50'; row.style.position='relative'; row.style.boxShadow='0 14px 30px -10px rgba(20,50,35,.35)'; row.style.cursor='grabbing';
-    rows.forEach(r=>{ if(r!==row) r.style.transition='transform .15s ease'; });
-    document.addEventListener('pointermove', App._memDragMove);
-    document.addEventListener('pointerup', App._memDragEnd, { once:true });
-  },
-  _memDragMove(e){
-    if(!dragCtx) return;
-    const dy=e.clientY-dragCtx.startY;
-    const row=dragCtx.rows.find(r=>r.dataset.id===dragCtx.id);
-    row.style.transform=`translateY(${dy}px)`;
-    let newIndex=dragCtx.startIndex+Math.round(dy/dragCtx.step);
-    newIndex=Math.max(0, Math.min(dragCtx.order.length-1, newIndex));
-    if(newIndex!==dragCtx.currentIndex){
-      const arr=dragCtx.order;
-      arr.splice(dragCtx.currentIndex,1);
-      arr.splice(newIndex,0,dragCtx.id);
-      dragCtx.currentIndex=newIndex;
-      dragCtx.rows.forEach(r=>{
-        if(r===row) return;
-        const idx=arr.indexOf(r.dataset.id);
-        const origIdx=state.members.findIndex(m=>m.id===r.dataset.id);
-        const shift=(idx-origIdx)*dragCtx.step;
-        r.style.transform=shift?`translateY(${shift}px)`:'';
-      });
+    } catch (e) {
+      state.loginErr = true;
+    } finally {
+      state.busy = false;
+      render();
     }
   },
-  _memDragEnd(){
-    document.removeEventListener('pointermove', App._memDragMove);
-    if(!dragCtx) return;
-    const { order, rows }=dragCtx;
-    rows.forEach(r=>{ r.style.transition=''; r.style.transform=''; r.style.position=''; r.style.zIndex=''; r.style.boxShadow=''; r.style.cursor=''; });
-    dragCtx=null;
-    App.reorderMembers(order);
-  },
-  reorderMembers(order){
-    const map=new Map(state.members.map(m=>[m.id,m]));
-    state.members=order.map((id,i)=>{ const m=map.get(id); m.sort=i; return m; });
+  onLoginKey(event) { if (event.key === 'Enter') App.onLogin(); },
+  async logout() {
+    if (sb) await sb.auth.signOut();
+    state.loggedIn = false;
+    state.view = 'home';
+    state.menuOpen = false;
     render();
-    if(!sb) return;
-    Promise.all(order.map((id,i)=>sb.from('members').update({ sort:i }).eq('id',id))).catch(notifyError);
   },
-  memKeyMove(e,id){
-    if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return;
-    e.preventDefault();
-    const order=state.members.map(m=>m.id);
-    const i=order.indexOf(id), j=i+(e.key==='ArrowUp'?-1:1);
-    if(j<0||j>=order.length) return;
-    const tmp=order[i]; order[i]=order[j]; order[j]=tmp;
+
+  /* ---- per-block Edit / Save / Cancel ----
+     Organization info and "our story" both follow the same pattern:
+     editOrg()/editStory() take a deep-copy snapshot into state.snap before
+     editing starts, so cancelOrg()/cancelStory() can restore it untouched.
+     Saving clears the snapshot since there's nothing left to roll back to. */
+
+  // organization
+  editOrg() { App._resetEdit(); state.snap = JSON.parse(JSON.stringify(state.org)); state.edit.org = true; render(); },
+  cancelOrg() { if (state.snap) state.org = state.snap; state.snap = null; state.edit.org = false; render(); },
+  onOrgField(inputEl) { setPath(state.org, inputEl.dataset.path, inputEl.value); },
+  onOrgLogo(inputEl) {
+    const file = (inputEl.files || [])[0];
+    inputEl.value = '';
+    if (!file) return;
+    state.busy = true;
+    render();
+    resize(file)
+      .then(dataUrl => uploadImage(dataUrl, 'org'))
+      .then(url => { state.org.logo = url; })
+      .catch(notifyError)
+      .finally(() => { state.busy = false; render(); });
+  },
+  removeOrgLogo() { state.org.logo = ''; render(); },
+  async saveOrg() {
+    if (!sb) return;
+    state.busy = true;
+    render();
+    try {
+      const { error } = await sb.from('org').upsert(orgToRow(state.org));
+      if (error) throw error;
+      state.edit.org = false;
+      state.snap = null;
+      flashSaved();
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  },
+
+  // activities — add/edit modal (js/modals.js formModal)
+  openAdd() {
+    state.errorMsg = '';
+    state.formOpen = true;
+    state.editingId = null;
+    state.form = { title: '', desc: '', date: today(), images: [] };
+    render();
+  },
+  openEdit(id) {
+    const activity = state.activities.find(x => x.id === id);
+    if (!activity) return;
+    state.errorMsg = '';
+    state.formOpen = true;
+    state.editingId = id;
+    state.form = { title: activity.title, desc: activity.desc, date: activity.date, images: (activity.images || []).slice() };
+    render();
+  },
+  closeForm() { state.formOpen = false; render(); },
+  onFormInput(fieldEl) {
+    state.form[fieldEl.dataset.path] = fieldEl.value;
+    if (fieldEl.dataset.path === 'title' || fieldEl.dataset.path === 'date') updateSaveBtn();
+  },
+  removeFormImage(index) { state.form.images = state.form.images.filter((_, i) => i !== index); render(); },
+  onPickImages(inputEl) {
+    const pickedFiles = Array.from(inputEl.files || []);
+    inputEl.value = '';
+    const remainingSlots = 30 - state.form.images.length;
+    const filesToAdd = pickedFiles.slice(0, Math.max(0, remainingSlots));
+    Promise.all(filesToAdd.map(file => resize(file))).then(dataUrls => {
+      state.form.images = state.form.images.concat(dataUrls.filter(Boolean));
+      render();
+    });
+  },
+  async saveActivity() {
+    const form = state.form;
+    if (!form.title.trim() || !form.date.trim() || !sb) return;
+    state.busy = true;
+    render();
+    try {
+      // Only newly-picked images are still data: URLs (from resize()) and
+      // need uploading; images kept from the original activity are already
+      // public URLs, so re-uploading them would be wasted work.
+      const imageUrls = [];
+      for (const image of form.images) {
+        imageUrls.push(image.indexOf('data:') === 0 ? await uploadImage(image, 'activities') : image);
+      }
+      if (state.editingId) {
+        const { error } = await sb.from('activities')
+          .update({ title: form.title, description: form.desc, date: form.date || null, images: imageUrls })
+          .eq('id', state.editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('activities')
+          .insert({ title: form.title, description: form.desc, date: form.date || today(), images: imageUrls });
+        if (error) throw error;
+      }
+      await loadData();
+      state.formOpen = false;
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  },
+  async deleteActivity(id) {
+    if (!window.confirm(T.confirm_del)) return;
+    try {
+      const { error } = await sb.from('activities').delete().eq('id', id);
+      if (error) throw error;
+      await loadData();
+      render();
+    } catch (e) {
+      notifyError(e);
+    }
+  },
+
+  /* team (members) — add/edit popup form.
+     `sort` is stored 0-based in the DB but shown to admins as a 1-based
+     "Order" field (see T.mb_order_hint), so each place that touches it
+     adds/subtracts 1 at the boundary. */
+  openMemberAdd() {
+    App._resetEdit();
+    state.errorMsg = '';
+    state.memForm = { open: true, id: null, name: '', role: '', photo: '', sort: state.members.length + 1 };
+    render();
+  },
+  openMemberEdit(id) {
+    const member = state.members.find(x => x.id === id);
+    if (!member) return;
+    App._resetEdit();
+    state.errorMsg = '';
+    state.memForm = { open: true, id: member.id, name: member.name, role: member.role, photo: member.photo || '', sort: (member.sort || 0) + 1 };
+    render();
+  },
+  closeMemberForm() { state.memForm.open = false; render(); },
+  onMemForm(fieldEl) {
+    state.memForm[fieldEl.dataset.path] = fieldEl.value;
+    const form = state.memForm;
+    toggleSave('saveMemBtn', form.name.trim().length > 0 && form.role.trim().length > 0 && String(form.sort).trim().length > 0);
+  },
+  onMemFormPhoto(inputEl) {
+    const file = (inputEl.files || [])[0];
+    inputEl.value = '';
+    if (!file) return;
+    state.busy = true;
+    render();
+    resize(file)
+      .then(dataUrl => uploadImage(dataUrl, 'members'))
+      .then(url => { state.memForm.photo = url; })
+      .catch(notifyError)
+      .finally(() => { state.busy = false; render(); });
+  },
+  async saveMemberForm() {
+    const form = state.memForm;
+    if (!sb || !form.name.trim() || !form.role.trim() || !String(form.sort).trim()) return;
+    state.busy = true;
+    render();
+    try {
+      const sort = Math.max(1, parseInt(form.sort, 10) || 1) - 1;
+      if (form.id) {
+        const { error } = await sb.from('members').update({ name: form.name, role: form.role, photo: form.photo, sort }).eq('id', form.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('members').insert({ name: form.name, role: form.role, photo: form.photo, sort });
+        if (error) throw error;
+      }
+      await loadData();
+      state.memForm.open = false;
+      flashSaved();
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  },
+  async removeMember(id) {
+    if (!window.confirm(T.confirm_del_member)) return;
+    try {
+      const { error } = await sb.from('members').delete().eq('id', id);
+      if (error) throw error;
+      await loadData();
+      render();
+    } catch (e) {
+      notifyError(e);
+    }
+  },
+
+  /* team (members) — drag to reorder.
+     A lightweight manual drag implementation (no library): pointerdown
+     records where the dragged row started and how tall one row + its gap is
+     (rowStep), then every pointermove converts the vertical mouse movement
+     into "how many rows did we move past" and visually shifts the *other*
+     rows out of the way so it looks like they're swapping places. Nothing is
+     saved to Supabase until the pointer is released
+     (_memDragEnd -> reorderMembers). */
+  memDragStart(event, memberId) {
+    event.preventDefault();
+    const listEl = document.querySelector('.mem-list');
+    if (!listEl) return;
+    const rows = Array.from(listEl.querySelectorAll('.mem-row'));
+    const draggedRow = rows.find(row => row.dataset.id === memberId);
+    if (!draggedRow) return;
+
+    const memberIdOrder = state.members.map(m => m.id);
+    const startIndex = memberIdOrder.indexOf(memberId);
+    const rowStep = draggedRow.getBoundingClientRect().height + 12; // row height + the gap between rows
+
+    dragCtx = { id: memberId, rows, order: memberIdOrder, startIndex, currentIndex: startIndex, startY: event.clientY, step: rowStep };
+
+    draggedRow.style.zIndex = '50';
+    draggedRow.style.position = 'relative';
+    draggedRow.style.boxShadow = '0 14px 30px -10px rgba(20,50,35,.35)';
+    draggedRow.style.cursor = 'grabbing';
+    rows.forEach(row => { if (row !== draggedRow) row.style.transition = 'transform .15s ease'; });
+
+    document.addEventListener('pointermove', App._memDragMove);
+    document.addEventListener('pointerup', App._memDragEnd, { once: true });
+  },
+  _memDragMove(event) {
+    if (!dragCtx) return;
+    const draggedDistance = event.clientY - dragCtx.startY;
+    const draggedRow = dragCtx.rows.find(row => row.dataset.id === dragCtx.id);
+    draggedRow.style.transform = `translateY(${draggedDistance}px)`;
+
+    let targetIndex = dragCtx.startIndex + Math.round(draggedDistance / dragCtx.step);
+    targetIndex = Math.max(0, Math.min(dragCtx.order.length - 1, targetIndex));
+    if (targetIndex === dragCtx.currentIndex) return;
+
+    // Move the dragged id to its new slot in the working order, then shift
+    // every other row by however many slots it had to make room.
+    const workingOrder = dragCtx.order;
+    workingOrder.splice(dragCtx.currentIndex, 1);
+    workingOrder.splice(targetIndex, 0, dragCtx.id);
+    dragCtx.currentIndex = targetIndex;
+
+    dragCtx.rows.forEach(row => {
+      if (row === draggedRow) return;
+      const newIndex = workingOrder.indexOf(row.dataset.id);
+      const originalIndex = state.members.findIndex(m => m.id === row.dataset.id);
+      const shift = (newIndex - originalIndex) * dragCtx.step;
+      row.style.transform = shift ? `translateY(${shift}px)` : '';
+    });
+  },
+  _memDragEnd() {
+    document.removeEventListener('pointermove', App._memDragMove);
+    if (!dragCtx) return;
+    const { order, rows } = dragCtx;
+    rows.forEach(row => {
+      row.style.transition = '';
+      row.style.transform = '';
+      row.style.position = '';
+      row.style.zIndex = '';
+      row.style.boxShadow = '';
+      row.style.cursor = '';
+    });
+    dragCtx = null;
     App.reorderMembers(order);
-    const el=document.querySelector('.mem-row[data-id="'+id+'"] .drag-handle');
-    if(el) el.focus();
+  },
+  // Applies a new id order to state.members (sort = position) and persists
+  // it to Supabase; shared by both the pointer-drag end and the keyboard
+  // reorder below.
+  reorderMembers(memberIdOrder) {
+    const membersById = new Map(state.members.map(m => [m.id, m]));
+    state.members = memberIdOrder.map((id, index) => {
+      const member = membersById.get(id);
+      member.sort = index;
+      return member;
+    });
+    render();
+    if (!sb) return;
+    Promise.all(memberIdOrder.map((id, index) => sb.from('members').update({ sort: index }).eq('id', id))).catch(notifyError);
+  },
+  memKeyMove(event, memberId) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    const memberIdOrder = state.members.map(m => m.id);
+    const currentIndex = memberIdOrder.indexOf(memberId);
+    const targetIndex = currentIndex + (event.key === 'ArrowUp' ? -1 : 1);
+    if (targetIndex < 0 || targetIndex >= memberIdOrder.length) return;
+
+    const swap = memberIdOrder[currentIndex];
+    memberIdOrder[currentIndex] = memberIdOrder[targetIndex];
+    memberIdOrder[targetIndex] = swap;
+    App.reorderMembers(memberIdOrder);
+
+    // reorderMembers() re-renders the list, so the handle that had focus is
+    // gone — find the same member's handle in the new markup and refocus it.
+    const handleEl = document.querySelector('.mem-row[data-id="' + memberId + '"] .drag-handle');
+    if (handleEl) handleEl.focus();
   },
 
-  // our story — story block + per-milestone edit
-  editStory(){ App._resetEdit(); state.snap={ story:(state.org.history&&state.org.history.story)||'' }; state.edit.story=true; render(); },
-  cancelStory(){ if(state.snap){ if(!state.org.history) state.org.history={}; state.org.history.story=state.snap.story; } state.snap=null; state.edit.story=false; render(); },
-  onStoryField(el){ setPath(state.org, el.dataset.path, el.value); },
-  async saveStory(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.story=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
-  // milestones — popup form (add + edit)
-  openMilestoneAdd(){ App._resetEdit(); state.errorMsg=''; state.msForm={ open:true, id:null, year:'', title:'', desc:'' }; render(); },
-  openMilestoneEdit(id){ const m=state.milestones.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.errorMsg=''; state.msForm={ open:true, id:m.id, year:m.year, title:m.title, desc:m.desc }; render(); },
-  closeMilestoneForm(){ state.msForm.open=false; render(); },
-  onMsForm(el){ if(el.dataset.path==='year') el.value=el.value.replace(/\D/g,''); state.msForm[el.dataset.path]=el.value; toggleSave('saveMsBtn', state.msForm.title.trim().length>0 && state.msForm.year.trim().length>0); },
-  async saveMilestoneForm(){ const f=state.msForm; if(!sb||!f.title.trim()||!f.year.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('milestones').update({ year:f.year, title:f.title, description:f.desc }).eq('id',f.id); if(error) throw error; } else { const { error }=await sb.from('milestones').insert({ year:f.year, title:f.title, description:f.desc }); if(error) throw error; } await loadData(); state.msForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
-  async removeMilestone(id){ if(!window.confirm(T.confirm_del_ms)) return; try{ const { error }=await sb.from('milestones').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
+  // our story — story text block + per-milestone add/edit popup
+  editStory() { App._resetEdit(); state.snap = { story: (state.org.history && state.org.history.story) || '' }; state.edit.story = true; render(); },
+  cancelStory() {
+    if (state.snap) {
+      if (!state.org.history) state.org.history = {};
+      state.org.history.story = state.snap.story;
+    }
+    state.snap = null;
+    state.edit.story = false;
+    render();
+  },
+  onStoryField(fieldEl) { setPath(state.org, fieldEl.dataset.path, fieldEl.value); },
+  async saveStory() {
+    if (!sb) return;
+    state.busy = true;
+    render();
+    try {
+      const { error } = await sb.from('org').upsert(orgToRow(state.org));
+      if (error) throw error;
+      state.edit.story = false;
+      state.snap = null;
+      flashSaved();
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  },
 
-  // detail
-  openDetail(id){ state.detailOpen=true; state.detailId=id; state.di=0; render(); },
-  closeDetail(){ state.detailOpen=false; render(); },
-  detailPrev(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di-1+n)%n; refreshDetailImage(); },
-  detailNext(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di+1)%n; refreshDetailImage(); },
-  detailGo(i){ state.di=i; refreshDetailImage(); },
-  dismissError(){ state.errorMsg=''; render(); }
+  openMilestoneAdd() {
+    App._resetEdit();
+    state.errorMsg = '';
+    state.msForm = { open: true, id: null, year: '', title: '', desc: '' };
+    render();
+  },
+  openMilestoneEdit(id) {
+    const milestone = state.milestones.find(x => x.id === id);
+    if (!milestone) return;
+    App._resetEdit();
+    state.errorMsg = '';
+    state.msForm = { open: true, id: milestone.id, year: milestone.year, title: milestone.title, desc: milestone.desc };
+    render();
+  },
+  closeMilestoneForm() { state.msForm.open = false; render(); },
+  onMsForm(fieldEl) {
+    if (fieldEl.dataset.path === 'year') fieldEl.value = fieldEl.value.replace(/\D/g, ''); // year is digits-only
+    state.msForm[fieldEl.dataset.path] = fieldEl.value;
+    toggleSave('saveMsBtn', state.msForm.title.trim().length > 0 && state.msForm.year.trim().length > 0);
+  },
+  async saveMilestoneForm() {
+    const form = state.msForm;
+    if (!sb || !form.title.trim() || !form.year.trim()) return;
+    state.busy = true;
+    render();
+    try {
+      if (form.id) {
+        const { error } = await sb.from('milestones').update({ year: form.year, title: form.title, description: form.desc }).eq('id', form.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('milestones').insert({ year: form.year, title: form.title, description: form.desc });
+        if (error) throw error;
+      }
+      await loadData();
+      state.msForm.open = false;
+      flashSaved();
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      state.busy = false;
+      render();
+    }
+  },
+  async removeMilestone(id) {
+    if (!window.confirm(T.confirm_del_ms)) return;
+    try {
+      const { error } = await sb.from('milestones').delete().eq('id', id);
+      if (error) throw error;
+      await loadData();
+      render();
+    } catch (e) {
+      notifyError(e);
+    }
+  },
+
+  // activity detail modal / image gallery (js/modals.js detailModal)
+  openDetail(id) { state.detailOpen = true; state.detailId = id; state.detailImageIndex = 0; render(); },
+  closeDetail() { state.detailOpen = false; render(); },
+  detailPrev() {
+    const activity = state.activities.find(x => x.id === state.detailId);
+    const imageCount = activity && activity.images ? activity.images.length : 0;
+    if (imageCount < 2) return;
+    state.detailImageIndex = (state.detailImageIndex - 1 + imageCount) % imageCount;
+    refreshDetailImage();
+  },
+  detailNext() {
+    const activity = state.activities.find(x => x.id === state.detailId);
+    const imageCount = activity && activity.images ? activity.images.length : 0;
+    if (imageCount < 2) return;
+    state.detailImageIndex = (state.detailImageIndex + 1) % imageCount;
+    refreshDetailImage();
+  },
+  detailGo(index) { state.detailImageIndex = index; refreshDetailImage(); },
+
+  dismissError() { state.errorMsg = ''; render(); }
 };
 
-function updateSaveBtn(){
-  const btn=document.getElementById('saveActivityBtn'); if(!btn) return;
-  const valid=state.form.title.trim().length>0 && state.form.date.trim().length>0;
-  btn.disabled=!valid;
-  btn.style.background=valid?'var(--primary)':'#B9D6C5';
-  btn.style.cursor=valid?'pointer':'not-allowed';
+/* These DOM-patch helpers exist so typing in a modal's required fields
+   enables/disables its Save button without calling render() — a full
+   render() would tear down and rebuild the input, losing focus and cursor
+   position on every keystroke. */
+function updateSaveBtn() {
+  const saveBtn = document.getElementById('saveActivityBtn');
+  if (!saveBtn) return;
+  const isValid = state.form.title.trim().length > 0 && state.form.date.trim().length > 0;
+  saveBtn.disabled = !isValid;
+  saveBtn.style.background = isValid ? 'var(--primary)' : '#B9D6C5';
+  saveBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
 }
-function toggleSave(id, valid){ const b=document.getElementById(id); if(!b) return; b.disabled=!valid; b.style.background=valid?'var(--primary)':'#B9D6C5'; b.style.cursor=valid?'pointer':'not-allowed'; }
-function modalSaveStyle(valid){ const on=valid&&!state.busy; return "padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:"+(on?'var(--primary)':'#B9D6C5')+";cursor:"+(on?'pointer':'not-allowed'); }
+function toggleSave(buttonId, isValid) {
+  const saveBtn = document.getElementById(buttonId);
+  if (!saveBtn) return;
+  saveBtn.disabled = !isValid;
+  saveBtn.style.background = isValid ? 'var(--primary)' : '#B9D6C5';
+  saveBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+}
+function modalSaveStyle(isValid) {
+  const isEnabled = isValid && !state.busy;
+  return "padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:" + (isEnabled ? 'var(--primary)' : '#B9D6C5') + ";cursor:" + (isEnabled ? 'pointer' : 'not-allowed');
+}
 
-document.addEventListener('keydown', function(e){
-  if(e.key!=='Escape') return;
-  if(state.detailOpen) App.closeDetail();
-  else if(state.formOpen) App.closeForm();
-  else if(state.memForm.open) App.closeMemberForm();
-  else if(state.msForm.open) App.closeMilestoneForm();
+// Esc closes whichever modal is currently open (checked in z-index order).
+document.addEventListener('keydown', function (event) {
+  if (event.key !== 'Escape') return;
+  if (state.detailOpen) App.closeDetail();
+  else if (state.formOpen) App.closeForm();
+  else if (state.memForm.open) App.closeMemberForm();
+  else if (state.msForm.open) App.closeMilestoneForm();
 });

@@ -3,58 +3,136 @@
    STATE + DB <-> view data mapping
    ============================================================ */
 
+// Single global state object. Every view function reads from this; every
+// App.* action mutates it and then calls render() (see app.js) to redraw.
+// There is no framework here — render() just rebuilds the whole #app HTML
+// from this object, so "update the UI" always means "update state, then render()".
 let state = {
-  view: 'home', adminTab: 'activities', loggedIn: false,
-  login: { user: '', pass: '' }, loginErr: false,
+  // current screen + mobile menu
+  view: 'home', adminTab: 'activities', menuOpen: false,
+
+  // admin login (Supabase Auth)
+  loggedIn: false, login: { user: '', pass: '' }, loginErr: false,
+
+  // activity add/edit modal (js/modals.js formModal)
   formOpen: false, editingId: null,
   form: { title: '', desc: '', date: '', images: [] },
-  detailOpen: false, detailId: null, di: 0,
-  orgSaved: false, menuOpen: false,
-  edit: { org:false, story:false }, snap: null,
-  memForm: { open:false, id:null, name:'', role:'', photo:'', sort:1 },
-  msForm: { open:false, id:null, year:'', title:'', desc:'' },
+
+  // activity detail modal / image gallery (js/modals.js detailModal)
+  detailOpen: false, detailId: null, detailImageIndex: 0,
+
+  // organization info + "our story" inline edit-in-place panels
+  // edit.org / edit.story toggle the panel between read view and form view;
+  // snap holds a deep copy taken on "Edit" so "Cancel" can restore it untouched.
+  edit: { org: false, story: false }, snap: null, orgSaved: false,
+
+  // team member add/edit modal (js/modals.js memberModal)
+  memForm: { open: false, id: null, name: '', role: '', photo: '', sort: 1 },
+
+  // milestone add/edit modal (js/modals.js milestoneModal)
+  msForm: { open: false, id: null, year: '', title: '', desc: '' },
+
+  // app-wide status flags
   loading: true, busy: false, errorMsg: '',
+
+  // data loaded from Supabase via loadData() below
   org: emptyOrg(), activities: [], members: [], milestones: []
 };
 
-function emptyOrg(){
-  return { short: 'BHI', logo: '', nameFull:{en:'Border Health Initiative'}, tagline:{en:''}, about:{en:''},
-           history:{story:''}, contact:{place:'',email:''}, stats:{} };
-}
-
-function orgFromRow(r){
-  if(!r) return emptyOrg();
+// Default org values, used before loadData() resolves and as the fallback
+// when no row exists yet in the `org` table.
+function emptyOrg() {
   return {
-    short: r.short || 'BHI',
-    logo: r.logo || '',
-    nameFull: { en: r.name      || '' },
-    tagline:  { en: r.name_full || '' },
-    about:    { en: r.about     || '' },
-    history:  { story: r.story  || '' },
-    contact:  { place: r.place  || '', email: r.email || '' },
-    stats: r.stats || {}
+    short: 'BHI',
+    logo: '',
+    nameFull: { en: 'Border Health Initiative' },
+    tagline: { en: '' },
+    about: { en: '' },
+    history: { story: '' },
+    contact: { place: '', email: '' },
+    stats: {}
   };
 }
-function orgToRow(o){
-  return { id:1, short:o.short, logo:o.logo||'', name:o.nameFull.en, name_full:o.tagline.en, about:o.about.en,
-           story:(o.history&&o.history.story)||'', place:o.contact.place, email:o.contact.email,
-           stats:o.stats||{}, updated_at:new Date().toISOString() };
-}
-const actFromRow = r => ({ id:r.id, title:r.title||'', desc:r.description||'', date:r.date||'', images:r.images||[], createdAt:r.created_at?new Date(r.created_at).getTime():0 });
-const msFromRow  = r => ({ id:r.id, year:r.year||'', title:r.title||'', desc:r.description||'', sort:r.sort||0 });
 
-async function loadData(){
-  if(!sb) return;
-  const [orgR, actR, memR, msR] = await Promise.all([
-    sb.from('org').select('*').eq('id',1).maybeSingle(),
+/* ----- org: DB row <-> view model -----
+   NOTE: the DB column names don't line up with the view-model names below —
+   this is legacy naming, not a bug:
+     DB "name"      -> view "nameFull.en"  (brand name shown in header/footer)
+     DB "name_full" -> view "tagline.en"   (long headline shown on the homepage hero)
+   Renaming either side would need a DB migration, so keep this mapping as-is. */
+function orgFromRow(row) {
+  if (!row) return emptyOrg();
+  return {
+    short: row.short || 'BHI',
+    logo: row.logo || '',
+    nameFull: { en: row.name || '' },
+    tagline: { en: row.name_full || '' },
+    about: { en: row.about || '' },
+    history: { story: row.story || '' },
+    contact: { place: row.place || '', email: row.email || '' },
+    stats: row.stats || {}
+  };
+}
+function orgToRow(org) {
+  return {
+    id: 1,
+    short: org.short,
+    logo: org.logo || '',
+    name: org.nameFull.en,
+    name_full: org.tagline.en,
+    about: org.about.en,
+    story: (org.history && org.history.story) || '',
+    place: org.contact.place,
+    email: org.contact.email,
+    stats: org.stats || {},
+    updated_at: new Date().toISOString()
+  };
+}
+
+// Activities and milestones map straight across (DB column -> view field),
+// only renaming "description" to "desc" and filling in safe defaults.
+const activityFromRow = (row) => ({
+  id: row.id,
+  title: row.title || '',
+  desc: row.description || '',
+  date: row.date || '',
+  images: row.images || [],
+  createdAt: row.created_at ? new Date(row.created_at).getTime() : 0
+});
+const milestoneFromRow = (row) => ({
+  id: row.id,
+  year: row.year || '',
+  title: row.title || '',
+  desc: row.description || '',
+  sort: row.sort || 0
+});
+
+// Fetches everything the app needs in one go and replaces `state`'s data
+// fields in place. Called on boot() and again after every admin save/delete
+// so the UI always reflects what's actually in the database.
+async function loadData() {
+  if (!sb) return;
+
+  const [orgResult, activitiesResult, membersResult, milestonesResult] = await Promise.all([
+    sb.from('org').select('*').eq('id', 1).maybeSingle(),
     sb.from('activities').select('*'),
-    sb.from('members').select('*').order('sort',{ascending:true}).order('created_at',{ascending:true}),
-    sb.from('milestones').select('*').order('created_at',{ascending:true})
+    sb.from('members').select('*').order('sort', { ascending: true }).order('created_at', { ascending: true }),
+    sb.from('milestones').select('*').order('created_at', { ascending: true })
   ]);
-  const err = orgR.error||actR.error||memR.error||msR.error;
-  if(err) throw err;
-  state.org = orgFromRow(orgR.data);
-  state.activities = (actR.data||[]).map(actFromRow);
-  state.members = (memR.data||[]).map(m=>({ id:m.id, name:m.name||'', role:m.role||'', photo:m.photo||'', sort:m.sort||0 }));
-  state.milestones = (msR.data||[]).map(msFromRow).sort((a,b)=>(parseInt(a.year,10)||0)-(parseInt(b.year,10)||0));
+
+  // Supabase returns { data, error } per query — bail out on the first failure
+  // so we don't render the app with only some of its data loaded.
+  const firstError = orgResult.error || activitiesResult.error || membersResult.error || milestonesResult.error;
+  if (firstError) throw firstError;
+
+  state.org = orgFromRow(orgResult.data);
+  state.activities = (activitiesResult.data || []).map(activityFromRow);
+  state.members = (membersResult.data || []).map(row => ({
+    id: row.id, name: row.name || '', role: row.role || '', photo: row.photo || '', sort: row.sort || 0
+  }));
+  // Milestones are stored unordered (sorted by created_at in the query above);
+  // re-sort by year here so the timeline always reads oldest -> newest.
+  state.milestones = (milestonesResult.data || [])
+    .map(milestoneFromRow)
+    .sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
 }

@@ -93,8 +93,8 @@ function orgEditPanel(org) {
         <input id="org-namefull" class="field" value="${attr(org.nameFull.en)}" data-path="nameFull.en" oninput="App.onOrgField(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
-        <label for="org-tagline" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.org_tagline}</label>
-        <input id="org-tagline" class="field" value="${attr(org.tagline.en)}" data-path="tagline.en" oninput="App.onOrgField(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
+        <label for="org-fullname" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.org_fullname}</label>
+        <input id="org-fullname" class="field" value="${attr(org.fullName.en)}" data-path="fullName.en" oninput="App.onOrgField(this)" style="width:100%;padding:10px 12px;border:1px solid #D2E5D9;border-radius:10px;font-size:14px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
         <label for="org-about" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.org_about}</label>
@@ -123,7 +123,7 @@ function orgReadOnlyPanel(org) {
       </div>
       ${infoRow(T.org_short, org.short)}
       ${infoRow(T.org_namefull, org.nameFull.en)}
-      ${infoRow(T.org_tagline, org.tagline.en)}
+      ${infoRow(T.org_fullname, org.fullName.en)}
       ${infoRow(T.org_about, org.about.en)}
       ${infoRow(T.c_place, org.contact.place)}
       ${infoRow(T.c_email, org.contact.email)}

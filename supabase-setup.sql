@@ -55,7 +55,6 @@ create table if not exists public.members (
   id          uuid primary key default gen_random_uuid(),
   name        text default '',
   role        text default '',
-  bio         text default '',
   photo       text default '',             -- public image URL
   sort        int default 0,
   isactive    boolean not null default true,
@@ -136,11 +135,11 @@ end $$;
 do $$
 begin
   if not exists (select 1 from public.members) then
-    insert into public.members (name, role, bio, sort) values
-      ('Dr. Somchai Phromma', 'Founder & Director', 'Family physician who started BHI after years of volunteer trips to border clinics.', 0),
-      ('Naree Kittisak',      'Medical Lead',       'Registered nurse coordinating mobile health units and patient triage.',            1),
-      ('Anan Wongchai',       'Field Coordinator',  'Plans logistics and works hand-in-hand with village leaders across Tak.',          2),
-      ('Lin Maung',           'Community Liaison',  'Translator and trusted bridge to migrant communities along the border.',           3);
+    insert into public.members (name, role, sort) values
+      ('Dr. Somchai Phromma', 'Founder & Director', 0),
+      ('Naree Kittisak',      'Medical Lead',       1),
+      ('Anan Wongchai',       'Field Coordinator',  2),
+      ('Lin Maung',           'Community Liaison',  3);
   end if;
 end $$;
 

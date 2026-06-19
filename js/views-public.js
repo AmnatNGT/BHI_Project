@@ -38,7 +38,7 @@ function homeView() {
           <span style="display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #DCEBE2;color:var(--primary);padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600">
             <span style="width:7px;height:7px;border-radius:50%;background:var(--primary)"></span>${T.hero_badge}
           </span>
-          <h1 style="font-family:var(--font-display);font-weight:600;font-size:clamp(34px,4.4vw,58px);line-height:1.08;letter-spacing:-.5px;margin:18px 0 0;text-wrap:balance;color:var(--ink)">${esc(state.org.tagline.en)}</h1>
+          <h1 style="font-family:var(--font-display);font-weight:600;font-size:clamp(34px,4.4vw,58px);line-height:1.08;letter-spacing:-.5px;margin:18px 0 0;text-wrap:balance;color:var(--ink)">${esc(state.org.fullName.en)}</h1>
           <p style="font-size:16.5px;line-height:1.75;color:var(--ink-soft);margin:18px 0 0;max-width:520px">${esc(state.org.about.en)}</p>
           <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap">
             <button class="btn-primary" onclick="App.goActivities()" style="background:var(--primary);color:#fff;padding:13px 24px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 12px 26px -12px var(--primary)">${T.cta_activities}</button>
@@ -80,7 +80,8 @@ function activitiesView() {
 }
 
 function historyView() {
-  const milestones = state.milestones.slice().sort((a, b) => String(a.year).localeCompare(String(b.year)));
+  // state.milestones is already sorted oldest -> newest by loadData() (see state.js)
+  const milestones = state.milestones;
   const story = (state.org.history && state.org.history.story) || '';
   return `
   <main id="main-content" tabindex="-1" style="outline:none;animation:fadeIn .3s ease both">

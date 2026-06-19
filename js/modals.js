@@ -12,7 +12,6 @@ function formModal() {
     .filter(({ image }) => image.isactive !== false);
   const imageCount = visibleImages.length;
   const isValid = state.form.title.trim().length > 0 && state.form.date.trim().length > 0;
-  const saveBtnStyle = "padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:" + (isValid && !state.busy ? 'var(--primary)' : '#B9D6C5') + ";cursor:" + (isValid && !state.busy ? 'pointer' : 'not-allowed');
 
   const imageTiles = visibleImages.map(({ image, index }) => `
     <div style="position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid #DCEBE2;${bg(image.url)}">
@@ -58,7 +57,7 @@ function formModal() {
       ${modalError()}
       <div style="display:flex;gap:12px;justify-content:flex-end">
         <button onclick="App.closeForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
-        <button id="saveActivityBtn" onclick="App.saveActivity()" ${isValid && !state.busy ? '' : 'disabled'} style="${saveBtnStyle}">${state.busy ? T.saving : T.save}</button>
+        <button id="saveActivityBtn" onclick="App.saveActivity()" ${isValid && !state.busy ? '' : 'disabled'} style="${modalSaveStyle(isValid)}">${state.busy ? T.saving : T.save}</button>
       </div>
     </div>
   </div>`;

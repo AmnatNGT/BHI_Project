@@ -387,10 +387,7 @@ const App = {
   // our story — story text block + per-milestone add/edit popup
   editStory() { App._resetEdit(); state.snap = { story: (state.org.history && state.org.history.story) || '' }; state.edit.story = true; render(); },
   cancelStory() {
-    if (state.snap) {
-      if (!state.org.history) state.org.history = {};
-      state.org.history.story = state.snap.story;
-    }
+    if (state.snap) state.org.history.story = state.snap.story;
     state.snap = null;
     state.edit.story = false;
     render();

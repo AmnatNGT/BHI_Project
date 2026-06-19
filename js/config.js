@@ -76,11 +76,12 @@ const T = {
   empty_admin: 'No activities yet — tap "Add activity" to start',
 
   // Admin — organization info form
-  // org_namefull labels the brand-name field (org.nameFull.en); org_tagline labels the
-  // homepage headline field (org.tagline.en) — see the mapping note in state.js orgFromRow().
+  // org_namefull labels the brand-name field (org.nameFull.en); org_fullname labels the
+  // org's full-name field (org.fullName.en), shown as the homepage hero heading — see
+  // the mapping note in state.js orgFromRow().
   org_logo: 'Logo', org_logo_hint: 'Shown in the header and footer instead of the monogram', org_logo_remove: 'Remove',
   org_short: 'Monogram', org_short_hint: 'Used as a placeholder when there\'s no logo',
-  org_namefull: 'Name', org_tagline: 'Full Name', org_about: 'About',
+  org_namefull: 'Name', org_fullname: 'Full Name', org_about: 'About',
   org_contact: 'Contact', c_place: 'Working area', c_email: 'Email',
 
   // Admin — our story + milestones form

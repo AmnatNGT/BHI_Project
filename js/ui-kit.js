@@ -118,7 +118,7 @@ function nav() {
         ${brandMark(42, 13, 17)}
         <span style="min-width:0">
           <span style="display:block;font-family:var(--font-ui);font-weight:600;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${esc(state.org.nameFull.en)}</span>
-          <span style="display:block;font-size:11px;color:var(--on-dark-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.tagline.en)}</span>
+          <span style="display:block;font-size:11px;color:var(--on-dark-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(state.org.fullName.en)}</span>
         </span>
       </button>
       <nav class="nav-desktop" aria-label="Primary" style="margin-left:auto;display:flex;align-items:center;gap:4px">
@@ -147,7 +147,7 @@ function footer() {
           ${brandMark(40, 12, 16)}
           <div>
             <div style="font-family:var(--font-ui);font-weight:600;font-size:14px;color:#fff">${esc(state.org.nameFull.en)}</div>
-            <div style="font-size:11px;color:var(--on-dark-muted);margin-top:1px">${esc(state.org.tagline.en)}</div>
+            <div style="font-size:11px;color:var(--on-dark-muted);margin-top:1px">${esc(state.org.fullName.en)}</div>
           </div>
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--on-dark-muted);margin-top:10px">👁 ${T.total_visits}: ${state.siteVisits.toLocaleString()}</div>

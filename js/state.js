@@ -49,7 +49,7 @@ function emptyOrg() {
     short: 'BHI',
     logo: '',
     nameFull: { en: 'Border Health Initiative' },
-    tagline: { en: '' },
+    fullName: { en: '' },
     about: { en: '' },
     history: { story: '' },
     contact: { place: '', email: '' },
@@ -61,7 +61,7 @@ function emptyOrg() {
    NOTE: the DB column names don't line up with the view-model names below —
    this is legacy naming, not a bug:
      DB "name"      -> view "nameFull.en"  (brand name shown in header/footer)
-     DB "name_full" -> view "tagline.en"   (long headline shown on the homepage hero)
+     DB "name_full" -> view "fullName.en"  (the org's full name, shown as the homepage hero heading)
    Renaming either side would need a DB migration, so keep this mapping as-is. */
 function orgFromRow(row) {
   if (!row) return emptyOrg();
@@ -69,7 +69,7 @@ function orgFromRow(row) {
     short: row.short || 'BHI',
     logo: row.logo || '',
     nameFull: { en: row.name || '' },
-    tagline: { en: row.name_full || '' },
+    fullName: { en: row.name_full || '' },
     about: { en: row.about || '' },
     history: { story: row.story || '' },
     contact: { place: row.place || '', email: row.email || '' },
@@ -82,7 +82,7 @@ function orgToRow(org) {
     short: org.short,
     logo: org.logo || '',
     name: org.nameFull.en,
-    name_full: org.tagline.en,
+    name_full: org.fullName.en,
     about: org.about.en,
     story: (org.history && org.history.story) || '',
     place: org.contact.place,

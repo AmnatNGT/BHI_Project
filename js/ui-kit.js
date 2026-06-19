@@ -49,7 +49,7 @@ function nav(){
         <button onclick="App.goMembers()" aria-current="${v==='members'?'page':'false'}" style="${navTab(v==='members')}">${T.nav_members}</button>`;
   const cta = `
         <button class="btn-admin-cta" onclick="App.goAdmin()" style="background:#fff;color:var(--primary-strong);padding:9px 16px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap">${T.admin}</button>
-        ${state.loggedIn?`<button onclick="App.logout()" style="background:transparent;color:var(--on-dark-muted);padding:8px 12px;border:none;font-size:13.5px;cursor:pointer;text-align:left;font:inherit">${T.logout}</button>`:''}`;
+        ${state.loggedIn?`<button onclick="App.logout()" style="background:transparent;color:var(--on-dark-muted);padding:8px 12px;border:none;font-size:13.5px;cursor:pointer;text-align:center;font:inherit">${T.logout}</button>`:''}`;
   return `
   <header style="position:sticky;top:0;z-index:50;background:var(--brand-gradient-scrim);border-bottom:2px solid var(--gold)">
     <div class="nav-wrap" style="max-width:1180px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:16px">
@@ -77,25 +77,28 @@ function nav(){
 }
 
 function footer(){
-  const flink=(label,onclick)=>`<button type="button" class="link-btn" onclick="${onclick}" style="color:var(--on-dark-muted);font-size:14px">${esc(label)}</button>`;
+  const flink=(label,onclick)=>`<button type="button" class="link-btn" onclick="${onclick}" style="color:var(--on-dark-muted);font-size:12.5px">${esc(label)}</button>`;
   return `
   <footer style="background:var(--brand-gradient-scrim);border-top:2px solid var(--gold);color:#D6E5DC;margin-top:30px">
-    <div class="footer-grid" style="max-width:1180px;margin:0 auto;padding:48px 24px 30px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:36px">
+    <div class="footer-grid" style="max-width:1180px;margin:0 auto;padding:22px 24px 12px;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:36px">
       <div>
         <div style="display:flex;align-items:center;gap:11px">
           ${brandMark(40,12,16)}
-          <div style="font-family:var(--font-ui);font-weight:600;font-size:16px;color:#fff">${esc(state.org.nameFull.en)}</div>
+          <div>
+            <div style="font-family:var(--font-ui);font-weight:600;font-size:14px;color:#fff">${esc(state.org.nameFull.en)}</div>
+            <div style="font-size:11px;color:var(--on-dark-muted);margin-top:1px">${esc(state.org.tagline.en)}</div>
+          </div>
         </div>
       </div>
       <div>
-        <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:14px">${T.footer_contact}</div>
-        <div style="color:var(--on-dark-muted);font-size:14px;line-height:1.9">
+        <div style="font-weight:600;font-size:12.5px;color:#fff;margin-bottom:12px">${T.footer_contact}</div>
+        <div style="color:var(--on-dark-muted);font-size:12.5px;line-height:1.8">
           <div>${esc(state.org.contact.place)}</div>
           <div>${esc(state.org.contact.email)}</div>
         </div>
       </div>
       <nav aria-label="Footer">
-        <div style="font-weight:600;font-size:14px;color:#fff;margin-bottom:14px">${T.footer_explore}</div>
+        <div style="font-weight:600;font-size:12.5px;color:#fff;margin-bottom:12px">${T.footer_explore}</div>
         <div style="display:flex;flex-direction:column;gap:10px">
           ${flink(T.nav_activities,'App.goActivities()')}
           ${flink(T.nav_history,'App.goHistory()')}
@@ -103,6 +106,6 @@ function footer(){
         </div>
       </nav>
     </div>
-    <div style="border-top:1px solid rgba(255,255,255,.16);padding:16px 24px;text-align:center;color:var(--on-dark-muted);font-size:12.5px">© ${new Date().getFullYear()} ${esc(state.org.nameFull.en)} · ${T.footer_rights}</div>
+    <div style="border-top:1px solid rgba(255,255,255,.16);padding:10px 24px;text-align:center;color:var(--on-dark-muted);font-size:11px">© ${new Date().getFullYear()} ${esc(state.org.nameFull.en)} · ${T.footer_rights}</div>
   </footer>`;
 }

@@ -3,6 +3,8 @@
    ACTIONS — the App controller object (all onclick/oninput handlers)
    ============================================================ */
 
+let dragCtx = null;
+
 const App = {
   // nav
   toggleMenu(){ state.menuOpen=!state.menuOpen; render(); },
@@ -67,13 +69,79 @@ const App = {
   async deleteActivity(id){ if(!window.confirm(T.confirm_del)) return; try{ const { error }=await sb.from('activities').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // team (members) — popup form (add + edit)
-  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', photo:'' }; render(); },
-  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'' }; render(); },
+  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', photo:'', sort:state.members.length+1 }; render(); },
+  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'', sort:(m.sort||0)+1 }; render(); },
   closeMemberForm(){ state.memForm.open=false; render(); },
   onMemForm(el){ state.memForm[el.dataset.path]=el.value; if(el.dataset.path==='name') toggleSave('saveMemBtn', state.memForm.name.trim().length>0); },
   onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
-  async saveMemberForm(){ const f=state.memForm; if(!sb||!f.name.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('members').update({ name:f.name, role:f.role, photo:f.photo }).eq('id',f.id); if(error) throw error; } else { const sort=state.members.length; const { error }=await sb.from('members').insert({ name:f.name, role:f.role, photo:f.photo, sort }); if(error) throw error; } await loadData(); state.memForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  async saveMemberForm(){
+    const f=state.memForm; if(!sb||!f.name.trim()) return;
+    state.busy=true; render();
+    try{
+      const sort=Math.max(1,parseInt(f.sort,10)||1)-1;
+      if(f.id){
+        const { error }=await sb.from('members').update({ name:f.name, role:f.role, photo:f.photo, sort }).eq('id',f.id);
+        if(error) throw error;
+      } else {
+        const { error }=await sb.from('members').insert({ name:f.name, role:f.role, photo:f.photo, sort });
+        if(error) throw error;
+      }
+      await loadData(); state.memForm.open=false; flashSaved();
+    }catch(e){ notifyError(e); } finally{ state.busy=false; render(); }
+  },
   async removeMember(id){ if(!window.confirm(T.confirm_del_member)) return; try{ const { error }=await sb.from('members').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
+
+  // team (members) — drag to reorder
+  memDragStart(e,id){
+    e.preventDefault();
+    const listEl=document.querySelector('.mem-list'); if(!listEl) return;
+    const rows=Array.from(listEl.querySelectorAll('.mem-row'));
+    const row=rows.find(r=>r.dataset.id===id); if(!row) return;
+    const order=state.members.map(m=>m.id);
+    const startIndex=order.indexOf(id);
+    const step=row.getBoundingClientRect().height+12;
+    dragCtx={ id, rows, order, startIndex, currentIndex:startIndex, startY:e.clientY, step };
+    row.style.zIndex='50'; row.style.position='relative'; row.style.boxShadow='0 14px 30px -10px rgba(20,50,35,.35)'; row.style.cursor='grabbing';
+    rows.forEach(r=>{ if(r!==row) r.style.transition='transform .15s ease'; });
+    document.addEventListener('pointermove', App._memDragMove);
+    document.addEventListener('pointerup', App._memDragEnd, { once:true });
+  },
+  _memDragMove(e){
+    if(!dragCtx) return;
+    const dy=e.clientY-dragCtx.startY;
+    const row=dragCtx.rows.find(r=>r.dataset.id===dragCtx.id);
+    row.style.transform=`translateY(${dy}px)`;
+    let newIndex=dragCtx.startIndex+Math.round(dy/dragCtx.step);
+    newIndex=Math.max(0, Math.min(dragCtx.order.length-1, newIndex));
+    if(newIndex!==dragCtx.currentIndex){
+      const arr=dragCtx.order;
+      arr.splice(dragCtx.currentIndex,1);
+      arr.splice(newIndex,0,dragCtx.id);
+      dragCtx.currentIndex=newIndex;
+      dragCtx.rows.forEach(r=>{
+        if(r===row) return;
+        const idx=arr.indexOf(r.dataset.id);
+        const origIdx=state.members.findIndex(m=>m.id===r.dataset.id);
+        const shift=(idx-origIdx)*dragCtx.step;
+        r.style.transform=shift?`translateY(${shift}px)`:'';
+      });
+    }
+  },
+  _memDragEnd(){
+    document.removeEventListener('pointermove', App._memDragMove);
+    if(!dragCtx) return;
+    const { order, rows }=dragCtx;
+    rows.forEach(r=>{ r.style.transition=''; r.style.transform=''; r.style.position=''; r.style.zIndex=''; r.style.boxShadow=''; r.style.cursor=''; });
+    dragCtx=null;
+    App.reorderMembers(order);
+  },
+  reorderMembers(order){
+    const map=new Map(state.members.map(m=>[m.id,m]));
+    state.members=order.map((id,i)=>{ const m=map.get(id); m.sort=i; return m; });
+    render();
+    if(!sb) return;
+    Promise.all(order.map((id,i)=>sb.from('members').update({ sort:i }).eq('id',id))).catch(notifyError);
+  },
 
   // our story — story block + per-milestone edit
   editStory(){ App._resetEdit(); state.snap={ story:(state.org.history&&state.org.history.story)||'' }; state.edit.story=true; render(); },

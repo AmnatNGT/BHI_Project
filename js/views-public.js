@@ -112,7 +112,7 @@ function membersView(){
     const has=!!m.photo;
     const av=has?bg(m.photo):('background:'+GRADS[i%GRADS.length]);
     return `
-    <div style="background:#fff;border:1px solid #DCEBE2;border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(30,60,40,.04)">
+    <div style="flex:0 1 250px;max-width:250px;min-width:200px;background:#fff;border:1px solid #DCEBE2;border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(30,60,40,.04)">
       <div style="height:230px;background:#E8F2EC;${av};display:flex;align-items:center;justify-content:center">
         ${!has?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:44px;color:rgba(255,255,255,.92)">${esc(initials(m.name))}</span>`:''}
       </div>
@@ -122,6 +122,15 @@ function membersView(){
       </div>
     </div>`;
   };
+  const ranks=[];
+  const byRank=new Map();
+  list.forEach(m=>{
+    const key=m.sort||0;
+    if(!byRank.has(key)){ byRank.set(key,[]); ranks.push(key); }
+    byRank.get(key).push(m);
+  });
+  ranks.sort((a,b)=>a-b);
+  const rows=ranks.map(key=>`<div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">${byRank.get(key).map(card).join('')}</div>`).join('');
   return `
   <main style="max-width:1180px;margin:0 auto;padding:54px 24px 40px;animation:fadeIn .3s ease both">
     <div style="margin-bottom:32px">
@@ -131,7 +140,6 @@ function membersView(){
       <h1 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:clamp(28px,3.2vw,40px);margin:10px 0 0;letter-spacing:-.4px">${T.mem_title}</h1>
       <p style="color:#6F8479;font-size:15px;margin:8px 0 0">${T.mem_sub}</p>
     </div>
-    ${list.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:24px">${list.map(card).join('')}</div>`
-      :`<div style="text-align:center;padding:70px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:20px;color:#8aa093">${T.empty_members}</div>`}
+    ${list.length?rows:`<div style="text-align:center;padding:70px 20px;background:#fff;border:1px dashed #CFE5D8;border-radius:20px;color:#8aa093">${T.empty_members}</div>`}
   </main>`;
 }

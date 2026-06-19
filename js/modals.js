@@ -74,7 +74,10 @@ function memberModal(){
           <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_name}</label>
           <input class="field" value="${attr(f.name)}" data-path="name" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_name)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;margin-bottom:12px">
           <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_role}</label>
-          <input class="field" value="${attr(f.role)}" data-path="role" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+          <input class="field" value="${attr(f.role)}" data-path="role" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;margin-bottom:12px">
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_order}</label>
+          <input class="field" type="number" min="1" value="${attr(f.sort)}" data-path="sort" oninput="App.onMemForm(this)" style="width:100px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+          <div style="font-size:11.5px;color:#8aa093;margin-top:6px">${T.mb_order_hint}</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end">

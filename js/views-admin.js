@@ -156,11 +156,13 @@ function dashView(){
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:18px;margin:0">${T.dash_memmgr}</h3>
         <button class="btn-primary" onclick="App.openMemberAdd()" style="background:var(--primary);color:#fff;padding:10px 17px;border:none;border-radius:11px;font-weight:600;font-size:14px;cursor:pointer">＋ ${T.mb_add}</button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="mem-list" style="display:flex;flex-direction:column;gap:12px">
         ${state.members.map((m,i)=>{
           const has=!!m.photo; const av=has?bg(m.photo):('background:'+GRADS[i%GRADS.length]);
           return `
-          <div class="mem-row" style="background:#fff;border:1px solid #DCEBE2;border-radius:16px;padding:16px;display:flex;gap:16px;align-items:center">
+          <div class="mem-row" data-id="${m.id}" style="background:#fff;border:1px solid #DCEBE2;border-radius:16px;padding:16px;display:flex;gap:12px;align-items:center">
+            <div onpointerdown="App.memDragStart(event,'${m.id}')" style="flex:none;width:26px;height:40px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;color:#B7CCBE;font-size:18px;user-select:none">⠿</div>
+            <div style="flex:none;width:30px;height:30px;border-radius:9px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${(m.sort||0)+1}</div>
             <div style="width:72px;height:72px;border-radius:14px;flex:none;background:#E8F2EC;${av};display:flex;align-items:center;justify-content:center;overflow:hidden">
               ${!has?`<span style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:24px;color:rgba(255,255,255,.92)">${esc(initials(m.name))}</span>`:''}
             </div>

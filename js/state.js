@@ -11,7 +11,7 @@ let state = {
   detailOpen: false, detailId: null, di: 0,
   orgSaved: false, menuOpen: false,
   edit: { org:false, story:false }, snap: null,
-  memForm: { open:false, id:null, name:'', role:'', photo:'' },
+  memForm: { open:false, id:null, name:'', role:'', photo:'', sort:1 },
   msForm: { open:false, id:null, year:'', title:'', desc:'' },
   loading: true, busy: false, errorMsg: '',
   org: emptyOrg(), activities: [], members: [], milestones: []

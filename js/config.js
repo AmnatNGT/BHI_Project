@@ -43,7 +43,7 @@ const T = {
   org_contact: 'Contact', c_place: 'Working area', c_email: 'Email',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
   hist_story: 'Organization story', m_add: 'Add milestone', m_year: 'Year', m_title: 'Title', m_desc: 'Description',
-  mb_add: 'Add member', mb_edit: 'Edit member', m_edit: 'Edit milestone', mb_name: 'Name', mb_role: 'Role', mb_photo: 'Photo',
+  mb_add: 'Add member', mb_edit: 'Edit member', m_edit: 'Edit milestone', mb_name: 'Name', mb_role: 'Role', mb_photo: 'Photo', mb_order: 'Order', mb_order_hint: 'Position on the Our Team page (1 = shown first)',
   footer_contact: 'Contact', footer_explore: 'Explore', footer_rights: 'All rights reserved',
   confirm_del: 'Delete this activity?', confirm_del_member: 'Remove this team member?', confirm_del_ms: 'Remove this milestone?',
   loading: 'Loading…', saving: 'Saving…'

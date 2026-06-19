@@ -15,9 +15,9 @@ let sb = null;
 if (CONFIGURED && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const GRADS = [
-  'linear-gradient(135deg,#3FB984,#2E8B57)', 'linear-gradient(135deg,#57A777,#2E8B57)',
-  'linear-gradient(135deg,#2E8B86,#2E8B57)', 'linear-gradient(135deg,#6FB36A,#3F8F5B)',
-  'linear-gradient(135deg,#2E8B57,#1F6E4A)', 'linear-gradient(135deg,#84B86B,#4E9A6B)'
+  'linear-gradient(135deg,#34A573,#155C3A)', 'linear-gradient(135deg,#1F7A4D,#0F3A26)',
+  'linear-gradient(135deg,#3C8F6E,#1B4D38)', 'linear-gradient(135deg,#5B9B6E,#256B45)',
+  'linear-gradient(135deg,#2D8364,#123524)', 'linear-gradient(135deg,#6FA37A,#2F6B4A)'
 ];
 
 const T = {

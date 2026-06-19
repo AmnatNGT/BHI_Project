@@ -5,7 +5,7 @@
 
 function formModal(){
   const imgCount=state.form.images.length;
-  const valid=state.form.title.trim().length>0;
+  const valid=state.form.title.trim().length>0 && state.form.date.trim().length>0;
   const saveBtnStyle="padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:"+(valid&&!state.busy?'var(--primary)':'#B9D6C5')+";cursor:"+(valid&&!state.busy?'pointer':'not-allowed');
   const imgs=state.form.images.map((src,i)=>`
     <div style="position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid #DCEBE2;${bg(src)}">
@@ -18,18 +18,18 @@ function formModal(){
       <input type="file" accept="image/*" multiple onchange="App.onPickImages(this)" style="display:none">
     </label>`:'';
   return `
-  <div class="modal-wrap" onclick="App.closeForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
-    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:600px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:600px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${state.editingId?T.edit_activity:T.add_activity}</h3>
         <button onclick="App.closeForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
       </div>
       <div style="margin-bottom:16px">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.f_title}</label>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.f_title} <span style="color:#C0392B">*</span></label>
         <input class="field" value="${attr(state.form.title)}" data-path="title" oninput="App.onFormInput(this)" placeholder="${attr(T.f_title)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.f_date}</label>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.f_date} <span style="color:#C0392B">*</span></label>
         <input class="field" type="date" value="${attr(state.form.date)}" data-path="date" onchange="App.onFormInput(this)" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:18px">
@@ -56,10 +56,10 @@ function formModal(){
 
 function memberModal(){
   const f=state.memForm; const has=!!f.photo; const av=has?bg(f.photo):('background:'+GRADS[0]);
-  const valid=f.name.trim().length>0;
+  const valid=f.name.trim().length>0 && f.role.trim().length>0 && String(f.sort).trim().length>0;
   return `
-  <div class="modal-wrap" onclick="App.closeMemberForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
-    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:540px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:540px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${f.id?T.mb_edit:T.mb_add}</h3>
         <button onclick="App.closeMemberForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
@@ -71,11 +71,11 @@ function memberModal(){
           <input type="file" accept="image/*" onchange="App.onMemFormPhoto(this)" style="display:none">
         </label>
         <div style="flex:1;min-width:0">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_name}</label>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_name} <span style="color:#C0392B">*</span></label>
           <input class="field" value="${attr(f.name)}" data-path="name" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_name)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;margin-bottom:12px">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_role}</label>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_role} <span style="color:#C0392B">*</span></label>
           <input class="field" value="${attr(f.role)}" data-path="role" oninput="App.onMemForm(this)" placeholder="${attr(T.mb_role)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;margin-bottom:12px">
-          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_order}</label>
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.mb_order} <span style="color:#C0392B">*</span></label>
           <input class="field" type="number" min="1" value="${attr(f.sort)}" data-path="sort" oninput="App.onMemForm(this)" style="width:100px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
           <div style="font-size:11.5px;color:#8aa093;margin-top:6px">${T.mb_order_hint}</div>
         </div>
@@ -89,20 +89,20 @@ function memberModal(){
 }
 
 function milestoneModal(){
-  const f=state.msForm; const valid=f.title.trim().length>0;
+  const f=state.msForm; const valid=f.title.trim().length>0 && f.year.trim().length>0;
   return `
-  <div class="modal-wrap" onclick="App.closeMilestoneForm()" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
-    <div class="modal-card" onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;width:100%;max-width:520px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(18,40,28,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+    <div class="modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:520px;padding:30px;box-shadow:0 40px 80px -30px rgba(20,40,25,.5);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:700;font-size:21px;margin:0">${f.id?T.m_edit:T.m_add}</h3>
         <button onclick="App.closeMilestoneForm()" style="background:#EAF4EE;border:none;width:34px;height:34px;border-radius:10px;cursor:pointer;color:#3a4d44;font-size:18px">✕</button>
       </div>
       <div style="margin-bottom:16px">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_year}</label>
-        <input class="field" value="${attr(f.year)}" data-path="year" oninput="App.onMsForm(this)" placeholder="${attr(T.m_year)}" style="width:160px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_year} <span style="color:#C0392B">*</span></label>
+        <input class="field" value="${attr(f.year)}" data-path="year" inputmode="numeric" maxlength="4" oninput="App.onMsForm(this)" placeholder="${attr(T.m_year)}" style="width:160px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:16px">
-        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_title}</label>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#6F8479;margin:0 0 6px">${T.m_title} <span style="color:#C0392B">*</span></label>
         <input class="field" value="${attr(f.title)}" data-path="title" oninput="App.onMsForm(this)" placeholder="${attr(T.m_title)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
       </div>
       <div style="margin-bottom:22px">

@@ -13,8 +13,8 @@ create table if not exists public.org (
   id          int primary key default 1,
   short       text,
   logo        text,                          -- public image URL
+  name        text,
   name_full   text,
-  tagline     text,
   about       text,
   story       text,
   place       text,
@@ -26,6 +26,20 @@ create table if not exists public.org (
 
 -- patches an existing org table that predates the logo column
 alter table public.org add column if not exists logo text;
+
+-- renames columns on an existing org table to the new "name" / "name_full" naming
+-- ("name_full" -> "name" first, then "tagline" -> "name_full", to avoid a collision)
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='org' and column_name='name_full')
+     and not exists (select 1 from information_schema.columns where table_schema='public' and table_name='org' and column_name='name') then
+    alter table public.org rename column name_full to name;
+  end if;
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='org' and column_name='tagline')
+     and not exists (select 1 from information_schema.columns where table_schema='public' and table_name='org' and column_name='name_full') then
+    alter table public.org rename column tagline to name_full;
+  end if;
+end $$;
 
 create table if not exists public.activities (
   id          uuid primary key default gen_random_uuid(),
@@ -62,7 +76,7 @@ create table if not exists public.milestones (
 do $$
 begin
   if not exists (select 1 from public.org where id = 1) then
-    insert into public.org (id, short, name_full, tagline, about, story, place, email, stats) values (
+    insert into public.org (id, short, name, name_full, about, story, place, email, stats) values (
       1,
       'BHI',
       'Border Health Initiative',

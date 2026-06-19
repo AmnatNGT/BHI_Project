@@ -39,7 +39,7 @@ const T = {
   f_title: 'Activity title', f_desc: 'Description', f_date: 'Date', f_images: 'Images', f_add: 'Add image',
   f_hint: 'Up to 30 images', f_full: 'Reached the 30-image limit',
   empty_admin: 'No activities yet — tap "Add activity" to start', empty_members_admin: 'No team members yet — tap "Add member".',
-  org_logo: 'Logo', org_logo_hint: 'Shown in the header and footer instead of the monogram', org_short: 'Monogram', org_short_hint: 'Shown when no logo is set', org_namefull: 'Full name', org_tagline: 'Tagline', org_about: 'About',
+  org_logo: 'Logo', org_logo_hint: 'Shown in the header and footer instead of the monogram', org_logo_remove: 'Remove', org_short: 'Monogram', org_short_hint: 'Used as a placeholder when there\'s no logo', org_namefull: 'Name', org_tagline: 'Full Name', org_about: 'About',
   org_contact: 'Contact', c_place: 'Working area', c_email: 'Email',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
   hist_story: 'Organization story', m_add: 'Add milestone', m_year: 'Year', m_title: 'Title', m_desc: 'Description',

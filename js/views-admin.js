@@ -43,7 +43,10 @@ function dashView(){
             <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(18,40,28,.55);color:#fff;font-size:9px;text-align:center;padding:2px">${T.mb_photo}</span>
             <input type="file" accept="image/*" onchange="App.onOrgLogo(this)" style="display:none">
           </label>
-          <span style="font-size:12.5px;color:#8aa093">${T.org_logo_hint}</span>
+          <div>
+            <span style="font-size:12.5px;color:#8aa093">${T.org_logo_hint}</span>
+            ${o.logo?`<div style="margin-top:6px"><button onclick="App.removeOrgLogo()" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;padding:5px 11px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">${T.org_logo_remove}</button></div>`:''}
+          </div>
         </div>
       </div>
       <div style="margin-bottom:16px">

@@ -41,13 +41,14 @@ const App = {
   cancelOrg(){ if(state.snap) state.org=state.snap; state.snap=null; state.edit.org=false; render(); },
   onOrgField(el){ setPath(state.org, el.dataset.path, el.value); },
   onOrgLogo(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'org')).then(url=>{ state.org.logo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
+  removeOrgLogo(){ state.org.logo=''; render(); },
   async saveOrg(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.org=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
 
   // activities
   openAdd(){ state.formOpen=true; state.editingId=null; state.form={title:'',desc:'',date:today(),images:[]}; render(); },
   openEdit(id){ const a=state.activities.find(x=>x.id===id); if(!a) return; state.formOpen=true; state.editingId=id; state.form={title:a.title,desc:a.desc,date:a.date,images:(a.images||[]).slice()}; render(); },
   closeForm(){ state.formOpen=false; render(); },
-  onFormInput(el){ state.form[el.dataset.path]=el.value; if(el.dataset.path==='title') updateSaveBtn(); },
+  onFormInput(el){ state.form[el.dataset.path]=el.value; if(el.dataset.path==='title'||el.dataset.path==='date') updateSaveBtn(); },
   removeFormImage(i){ state.form.images=state.form.images.filter((_,idx)=>idx!==i); render(); },
   onPickImages(el){
     const files=Array.from(el.files||[]); el.value='';
@@ -55,7 +56,7 @@ const App = {
     Promise.all(take.map(f=>resize(f))).then(urls=>{ state.form.images=state.form.images.concat(urls.filter(Boolean)); render(); });
   },
   async saveActivity(){
-    const f=state.form; if(!f.title.trim()||!sb) return;
+    const f=state.form; if(!f.title.trim()||!f.date.trim()||!sb) return;
     state.busy=true; render();
     try{
       const urls=[];
@@ -72,10 +73,10 @@ const App = {
   openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', photo:'', sort:state.members.length+1 }; render(); },
   openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'', sort:(m.sort||0)+1 }; render(); },
   closeMemberForm(){ state.memForm.open=false; render(); },
-  onMemForm(el){ state.memForm[el.dataset.path]=el.value; if(el.dataset.path==='name') toggleSave('saveMemBtn', state.memForm.name.trim().length>0); },
+  onMemForm(el){ state.memForm[el.dataset.path]=el.value; const f=state.memForm; toggleSave('saveMemBtn', f.name.trim().length>0 && f.role.trim().length>0 && String(f.sort).trim().length>0); },
   onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
   async saveMemberForm(){
-    const f=state.memForm; if(!sb||!f.name.trim()) return;
+    const f=state.memForm; if(!sb||!f.name.trim()||!f.role.trim()||!String(f.sort).trim()) return;
     state.busy=true; render();
     try{
       const sort=Math.max(1,parseInt(f.sort,10)||1)-1;
@@ -152,8 +153,8 @@ const App = {
   openMilestoneAdd(){ App._resetEdit(); state.msForm={ open:true, id:null, year:'', title:'', desc:'' }; render(); },
   openMilestoneEdit(id){ const m=state.milestones.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.msForm={ open:true, id:m.id, year:m.year, title:m.title, desc:m.desc }; render(); },
   closeMilestoneForm(){ state.msForm.open=false; render(); },
-  onMsForm(el){ state.msForm[el.dataset.path]=el.value; if(el.dataset.path==='title') toggleSave('saveMsBtn', state.msForm.title.trim().length>0); },
-  async saveMilestoneForm(){ const f=state.msForm; if(!sb||!f.title.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('milestones').update({ year:f.year, title:f.title, description:f.desc }).eq('id',f.id); if(error) throw error; } else { const sort=state.milestones.length; const { error }=await sb.from('milestones').insert({ year:f.year, title:f.title, description:f.desc, sort }); if(error) throw error; } await loadData(); state.msForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
+  onMsForm(el){ if(el.dataset.path==='year') el.value=el.value.replace(/\D/g,''); state.msForm[el.dataset.path]=el.value; toggleSave('saveMsBtn', state.msForm.title.trim().length>0 && state.msForm.year.trim().length>0); },
+  async saveMilestoneForm(){ const f=state.msForm; if(!sb||!f.title.trim()||!f.year.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('milestones').update({ year:f.year, title:f.title, description:f.desc }).eq('id',f.id); if(error) throw error; } else { const { error }=await sb.from('milestones').insert({ year:f.year, title:f.title, description:f.desc }); if(error) throw error; } await loadData(); state.msForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
   async removeMilestone(id){ if(!window.confirm(T.confirm_del_ms)) return; try{ const { error }=await sb.from('milestones').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // detail
@@ -167,7 +168,7 @@ const App = {
 
 function updateSaveBtn(){
   const btn=document.getElementById('saveActivityBtn'); if(!btn) return;
-  const valid=state.form.title.trim().length>0;
+  const valid=state.form.title.trim().length>0 && state.form.date.trim().length>0;
   btn.disabled=!valid;
   btn.style.background=valid?'var(--primary)':'#B9D6C5';
   btn.style.cursor=valid?'pointer':'not-allowed';

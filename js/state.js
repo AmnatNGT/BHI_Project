@@ -27,8 +27,8 @@ function orgFromRow(r){
   return {
     short: r.short || 'BHI',
     logo: r.logo || '',
-    nameFull: { en: r.name_full || '' },
-    tagline:  { en: r.tagline   || '' },
+    nameFull: { en: r.name      || '' },
+    tagline:  { en: r.name_full || '' },
     about:    { en: r.about     || '' },
     history:  { story: r.story  || '' },
     contact:  { place: r.place  || '', email: r.email || '' },
@@ -36,7 +36,7 @@ function orgFromRow(r){
   };
 }
 function orgToRow(o){
-  return { id:1, short:o.short, logo:o.logo||'', name_full:o.nameFull.en, tagline:o.tagline.en, about:o.about.en,
+  return { id:1, short:o.short, logo:o.logo||'', name:o.nameFull.en, name_full:o.tagline.en, about:o.about.en,
            story:(o.history&&o.history.story)||'', place:o.contact.place, email:o.contact.email,
            stats:o.stats||{}, updated_at:new Date().toISOString() };
 }
@@ -49,12 +49,12 @@ async function loadData(){
     sb.from('org').select('*').eq('id',1).maybeSingle(),
     sb.from('activities').select('*'),
     sb.from('members').select('*').order('sort',{ascending:true}).order('created_at',{ascending:true}),
-    sb.from('milestones').select('*').order('sort',{ascending:true}).order('created_at',{ascending:true})
+    sb.from('milestones').select('*').order('created_at',{ascending:true})
   ]);
   const err = orgR.error||actR.error||memR.error||msR.error;
   if(err) throw err;
   state.org = orgFromRow(orgR.data);
   state.activities = (actR.data||[]).map(actFromRow);
   state.members = (memR.data||[]).map(m=>({ id:m.id, name:m.name||'', role:m.role||'', photo:m.photo||'', sort:m.sort||0 }));
-  state.milestones = (msR.data||[]).map(msFromRow);
+  state.milestones = (msR.data||[]).map(msFromRow).sort((a,b)=>(parseInt(a.year,10)||0)-(parseInt(b.year,10)||0));
 }

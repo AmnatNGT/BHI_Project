@@ -22,7 +22,7 @@ const GRADS = [
 
 const T = {
   nav_home: 'Home', nav_activities: 'Activities', nav_history: 'Our Story', nav_members: 'Our Team',
-  admin: 'Admin', view_site: 'View site', logout: 'Log out',
+  admin: 'Admin', logout: 'Log out',
   hero_badge: 'Community health on the border', cta_activities: 'See our activities', cta_about: 'Our story',
   latest_kicker: 'What we do', latest: 'Latest Activities', view_all: 'View all',
   team_kicker: 'Our people',
@@ -32,7 +32,7 @@ const T = {
   hist_kicker: 'Who we are', hist_title: 'Our Story', timeline_title: 'Milestones',
   mem_title: 'Our Team', mem_sub: 'The people making it happen',
   login_title: 'Admin Login', login_sub: 'For organization staff only', login_user: 'Email', login_pass: 'Password',
-  login_btn: 'Log in', login_hint: 'Sign in with the admin account you created in Supabase', login_err: 'Incorrect email or password',
+  login_btn: 'Log in', login_hint: 'Sign in with the admin account', login_err: 'Incorrect email or password',
   dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team', autosave: 'Changes save automatically',
   saved: 'Saved', add_activity: 'Add activity', edit_activity: 'Edit activity', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel',
   save_changes: 'Save changes', save_hint: 'Edits are applied only after you click Save', unsaved: 'Unsaved changes',

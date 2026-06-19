@@ -24,7 +24,9 @@ const App = {
   async onLogin(){
     if(!sb) return;
     const { user, pass } = state.login;
-    state.busy=true; render();
+    state.busy=true;
+    const btn=document.getElementById('login-btn');
+    if(btn){ btn.disabled=true; btn.textContent=T.loading; }
     try{
       const { error } = await sb.auth.signInWithPassword({ email:user.trim(), password:pass });
       if(error){ state.loginErr=true; }
@@ -45,8 +47,8 @@ const App = {
   async saveOrg(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.org=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
 
   // activities
-  openAdd(){ state.formOpen=true; state.editingId=null; state.form={title:'',desc:'',date:today(),images:[]}; render(); },
-  openEdit(id){ const a=state.activities.find(x=>x.id===id); if(!a) return; state.formOpen=true; state.editingId=id; state.form={title:a.title,desc:a.desc,date:a.date,images:(a.images||[]).slice()}; render(); },
+  openAdd(){ state.errorMsg=''; state.formOpen=true; state.editingId=null; state.form={title:'',desc:'',date:today(),images:[]}; render(); },
+  openEdit(id){ const a=state.activities.find(x=>x.id===id); if(!a) return; state.errorMsg=''; state.formOpen=true; state.editingId=id; state.form={title:a.title,desc:a.desc,date:a.date,images:(a.images||[]).slice()}; render(); },
   closeForm(){ state.formOpen=false; render(); },
   onFormInput(el){ state.form[el.dataset.path]=el.value; if(el.dataset.path==='title'||el.dataset.path==='date') updateSaveBtn(); },
   removeFormImage(i){ state.form.images=state.form.images.filter((_,idx)=>idx!==i); render(); },
@@ -70,8 +72,8 @@ const App = {
   async deleteActivity(id){ if(!window.confirm(T.confirm_del)) return; try{ const { error }=await sb.from('activities').delete().eq('id',id); if(error) throw error; await loadData(); render(); }catch(e){ notifyError(e); } },
 
   // team (members) — popup form (add + edit)
-  openMemberAdd(){ App._resetEdit(); state.memForm={ open:true, id:null, name:'', role:'', photo:'', sort:state.members.length+1 }; render(); },
-  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'', sort:(m.sort||0)+1 }; render(); },
+  openMemberAdd(){ App._resetEdit(); state.errorMsg=''; state.memForm={ open:true, id:null, name:'', role:'', photo:'', sort:state.members.length+1 }; render(); },
+  openMemberEdit(id){ const m=state.members.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.errorMsg=''; state.memForm={ open:true, id:m.id, name:m.name, role:m.role, photo:m.photo||'', sort:(m.sort||0)+1 }; render(); },
   closeMemberForm(){ state.memForm.open=false; render(); },
   onMemForm(el){ state.memForm[el.dataset.path]=el.value; const f=state.memForm; toggleSave('saveMemBtn', f.name.trim().length>0 && f.role.trim().length>0 && String(f.sort).trim().length>0); },
   onMemFormPhoto(el){ const file=(el.files||[])[0]; el.value=''; if(!file) return; state.busy=true; render(); resize(file).then(d=>uploadImage(d,'members')).then(url=>{ state.memForm.photo=url; }).catch(notifyError).finally(()=>{ state.busy=false; render(); }); },
@@ -161,8 +163,8 @@ const App = {
   onStoryField(el){ setPath(state.org, el.dataset.path, el.value); },
   async saveStory(){ if(!sb) return; state.busy=true; render(); try{ const { error }=await sb.from('org').upsert(orgToRow(state.org)); if(error) throw error; state.edit.story=false; state.snap=null; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },
   // milestones — popup form (add + edit)
-  openMilestoneAdd(){ App._resetEdit(); state.msForm={ open:true, id:null, year:'', title:'', desc:'' }; render(); },
-  openMilestoneEdit(id){ const m=state.milestones.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.msForm={ open:true, id:m.id, year:m.year, title:m.title, desc:m.desc }; render(); },
+  openMilestoneAdd(){ App._resetEdit(); state.errorMsg=''; state.msForm={ open:true, id:null, year:'', title:'', desc:'' }; render(); },
+  openMilestoneEdit(id){ const m=state.milestones.find(x=>x.id===id); if(!m) return; App._resetEdit(); state.errorMsg=''; state.msForm={ open:true, id:m.id, year:m.year, title:m.title, desc:m.desc }; render(); },
   closeMilestoneForm(){ state.msForm.open=false; render(); },
   onMsForm(el){ if(el.dataset.path==='year') el.value=el.value.replace(/\D/g,''); state.msForm[el.dataset.path]=el.value; toggleSave('saveMsBtn', state.msForm.title.trim().length>0 && state.msForm.year.trim().length>0); },
   async saveMilestoneForm(){ const f=state.msForm; if(!sb||!f.title.trim()||!f.year.trim()) return; state.busy=true; render(); try{ if(f.id){ const { error }=await sb.from('milestones').update({ year:f.year, title:f.title, description:f.desc }).eq('id',f.id); if(error) throw error; } else { const { error }=await sb.from('milestones').insert({ year:f.year, title:f.title, description:f.desc }); if(error) throw error; } await loadData(); state.msForm.open=false; flashSaved(); }catch(e){ notifyError(e); } finally{ state.busy=false; render(); } },

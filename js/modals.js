@@ -18,7 +18,7 @@ function formModal(){
       <input type="file" accept="image/*" multiple onchange="App.onPickImages(this)" style="position:absolute;width:1px;height:1px;opacity:0">
     </label>`:'';
   return `
-  <div class="modal-wrap" onclick="App.closeForm()" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
     <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="act-modal-title" style="background:#fff;border-radius:22px;width:100%;max-width:600px;padding:30px;box-shadow:var(--shadow-lg);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 id="act-modal-title" style="font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;color:var(--ink)">${state.editingId?T.edit_activity:T.add_activity}</h3>
@@ -46,6 +46,7 @@ function formModal(){
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px">${imgCount>=30?T.f_full:T.f_hint}</div>
       </div>
+      ${modalError()}
       <div style="display:flex;gap:12px;justify-content:flex-end">
         <button onclick="App.closeForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
         <button id="saveActivityBtn" onclick="App.saveActivity()" ${valid&&!state.busy?'':'disabled'} style="${saveBtnStyle}">${state.busy?T.saving:T.save}</button>
@@ -58,7 +59,7 @@ function memberModal(){
   const f=state.memForm; const has=!!f.photo; const av=has?bg(f.photo):('background:'+GRADS[0]);
   const valid=f.name.trim().length>0 && f.role.trim().length>0 && String(f.sort).trim().length>0;
   return `
-  <div class="modal-wrap" onclick="App.closeMemberForm()" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
     <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="mem-modal-title" style="background:#fff;border-radius:22px;width:100%;max-width:540px;padding:30px;box-shadow:var(--shadow-lg);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 id="mem-modal-title" style="font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;color:var(--ink)">${f.id?T.mb_edit:T.mb_add}</h3>
@@ -80,6 +81,7 @@ function memberModal(){
           <div style="font-size:11.5px;color:var(--muted);margin-top:6px">${T.mb_order_hint}</div>
         </div>
       </div>
+      ${modalError()}
       <div style="display:flex;gap:12px;justify-content:flex-end">
         <button onclick="App.closeMemberForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
         <button id="saveMemBtn" onclick="App.saveMemberForm()" ${valid&&!state.busy?'':'disabled'} style="${modalSaveStyle(valid)}">${state.busy?T.saving:T.save}</button>
@@ -91,7 +93,7 @@ function memberModal(){
 function milestoneModal(){
   const f=state.msForm; const valid=f.title.trim().length>0 && f.year.trim().length>0;
   return `
-  <div class="modal-wrap" onclick="App.closeMilestoneForm()" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:120;background:rgba(16,36,26,.55);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto;animation:fadeIn .2s ease both">
     <div class="modal-card" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ms-modal-title" style="background:#fff;border-radius:22px;width:100%;max-width:520px;padding:30px;box-shadow:var(--shadow-lg);animation:pop .35s ease both">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <h3 id="ms-modal-title" style="font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;color:var(--ink)">${f.id?T.m_edit:T.m_add}</h3>
@@ -99,7 +101,7 @@ function milestoneModal(){
       </div>
       <div style="margin-bottom:16px">
         <label for="ms-year" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.m_year} <span style="color:#C0392B">*</span></label>
-        <input id="ms-year" class="field" required value="${attr(f.year)}" inputmode="numeric" maxlength="4" oninput="App.onMsForm(this)" placeholder="${attr(T.m_year)}" style="width:160px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none">
+        <input id="ms-year" class="field" required value="${attr(f.year)}" data-path="year" inputmode="numeric" maxlength="4" oninput="App.onMsForm(this)" placeholder="${attr(T.m_year)}" style="width:160px;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none" autofocus>
       </div>
       <div style="margin-bottom:16px">
         <label for="ms-title" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.m_title} <span style="color:#C0392B">*</span></label>
@@ -109,6 +111,7 @@ function milestoneModal(){
         <label for="ms-desc" style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 6px">${T.m_desc}</label>
         <textarea id="ms-desc" class="field" data-path="desc" oninput="App.onMsForm(this)" rows="3" placeholder="${attr(T.m_desc)}" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:15px;background:#F7FBF9;outline:none;line-height:1.6">${esc(f.desc)}</textarea>
       </div>
+      ${modalError()}
       <div style="display:flex;gap:12px;justify-content:flex-end">
         <button onclick="App.closeMilestoneForm()" style="background:#fff;color:#3a4d44;border:1px solid #D2E5D9;padding:12px 22px;border-radius:12px;font-weight:600;font-size:14.5px;cursor:pointer">${T.cancel}</button>
         <button id="saveMsBtn" onclick="App.saveMilestoneForm()" ${valid&&!state.busy?'':'disabled'} style="${modalSaveStyle(valid)}">${state.busy?T.saving:T.save}</button>
@@ -130,7 +133,7 @@ function detailModal(){
   const thumbs=imgs.map((src,i)=>`
     <button class="detail-thumb" onclick="App.detailGo(${i})" aria-label="${T.images} ${i+1}" aria-current="${i===di}" style="width:66px;height:66px;border-radius:11px;cursor:pointer;border:none;padding:0;${bg(src)};${i===di?'outline:3px solid var(--primary);outline-offset:1px':'opacity:.7'}"></button>`).join('');
   return `
-  <div class="modal-wrap" onclick="App.closeDetail()" style="position:fixed;inset:0;z-index:110;background:rgba(13,28,19,.66);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease both">
+  <div class="modal-wrap" style="position:fixed;inset:0;z-index:110;background:rgba(13,28,19,.66);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease both">
     <div onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title" style="background:#fff;border-radius:22px;max-width:840px;width:100%;max-height:90vh;overflow:auto;box-shadow:var(--shadow-lg);animation:pop .35s ease both">
       <div class="detail-hero" ${imgA11y} style="position:relative;height:380px;background:#E8F2EC;${curStyle}">
         ${!has?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center" aria-hidden="true"><span style="font-family:var(--font-ui);font-weight:700;font-size:46px;color:rgba(255,255,255,.92)">${esc(state.org.short)}</span></div>`:''}

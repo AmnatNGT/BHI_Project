@@ -12,6 +12,7 @@ function saveBtnEl(onclick){ return `<button onclick="${onclick}" ${state.busy?'
 function cancelBtnEl(onclick){ return `<button onclick="${onclick}" style="padding:10px 18px;border:1px solid #D2E5D9;border-radius:10px;font-weight:600;font-size:14px;background:#fff;color:#3a4d44;cursor:pointer">${T.cancel}</button>`; }
 function delBtnEl(onclick,label){ return `<button class="chip-del" onclick="${onclick}" title="${attr(label||T.delete)}" aria-label="${attr(label||T.delete)}" style="background:transparent;color:#C0392B;border:1px solid #F0D5CF;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:14px;flex:none">✕</button>`; }
 function infoRow(label,val){ return `<div style="padding:11px 0;border-top:1px solid #EFF6F1"><div style="font-size:12px;font-weight:600;color:var(--muted)">${esc(label)}</div><div style="font-size:14.5px;color:var(--ink);margin-top:3px;white-space:pre-wrap;line-height:1.6">${esc(val||'—')}</div></div>`; }
+function modalError(){ return state.errorMsg ? `<div role="alert" style="background:#FBEAE7;color:#C0392B;padding:11px 14px;border-radius:10px;font-size:13.5px;margin-bottom:18px;line-height:1.5">${esc(state.errorMsg)}</div>` : ''; }
 
 function brandMark(size, radius, fontSize){
   const has=!!state.org.logo;
@@ -47,8 +48,7 @@ function nav(){
         <button onclick="App.goHistory()" aria-current="${v==='history'?'page':'false'}" style="${navTab(v==='history')}">${T.nav_history}</button>
         <button onclick="App.goMembers()" aria-current="${v==='members'?'page':'false'}" style="${navTab(v==='members')}">${T.nav_members}</button>`;
   const cta = `
-        ${v!=='admin'?`<button class="btn-admin-cta" onclick="App.goAdmin()" style="background:#fff;color:var(--primary-strong);padding:9px 16px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap">${T.admin}</button>`:''}
-        ${v==='admin'?`<button onclick="App.goHome()" style="background:transparent;color:#fff;padding:8px 13px;border:1px solid rgba(255,255,255,.4);border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer">${T.view_site}</button>`:''}
+        <button class="btn-admin-cta" onclick="App.goAdmin()" style="background:#fff;color:var(--primary-strong);padding:9px 16px;border:none;border-radius:10px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap">${T.admin}</button>
         ${state.loggedIn?`<button onclick="App.logout()" style="background:transparent;color:var(--on-dark-muted);padding:8px 12px;border:none;font-size:13.5px;cursor:pointer;text-align:left;font:inherit">${T.logout}</button>`:''}`;
   return `
   <header style="position:sticky;top:0;z-index:50;background:var(--brand-gradient-scrim);border-bottom:2px solid var(--gold)">

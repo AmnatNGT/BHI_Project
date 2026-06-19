@@ -22,7 +22,7 @@ function loginView(){
         <input id="login-pass" class="field" type="password" value="${attr(state.login.pass)}" data-path="pass" oninput="App.onLoginInput(this)" onkeydown="App.onLoginKey(event)" autocomplete="current-password" style="width:100%;padding:11px 13px;border:1px solid #D2E5D9;border-radius:11px;font-size:14.5px;background:#F7FBF9;color:#1F2D26;outline:none">
       </div>
       ${state.loginErr?`<div role="alert" style="color:#C0392B;font-size:13px;margin:10px 0 0">${T.login_err}</div>`:''}
-      <button class="btn-primary" type="button" onclick="App.onLogin()" ${state.busy?'disabled':''} style="width:100%;margin-top:20px;background:var(--primary);color:#fff;padding:13px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer">${state.busy?T.saving:T.login_btn}</button>
+      <button id="login-btn" class="btn-primary" type="button" onclick="App.onLogin()" ${state.busy?'disabled':''} style="width:100%;margin-top:20px;background:var(--primary);color:#fff;padding:13px;border:none;border-radius:12px;font-weight:600;font-size:15px;cursor:pointer">${state.busy?T.loading:T.login_btn}</button>
       <div style="margin-top:16px;padding:10px 12px;background:#EAF4EE;border-radius:10px;color:var(--muted);font-size:12.5px;text-align:center">${T.login_hint}</div>
     </div>
   </section>`;

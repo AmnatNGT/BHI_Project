@@ -4,12 +4,18 @@
    ============================================================ */
 
 function formModal() {
-  const imageCount = state.form.images.length;
+  // Soft-deleted photos (isactive:false) stay in state.form.images so Save
+  // still writes them back, but they're skipped here — keeping each tile's
+  // original array index lets removeFormImage(index) target the right one.
+  const visibleImages = state.form.images
+    .map((image, index) => ({ image, index }))
+    .filter(({ image }) => image.isactive !== false);
+  const imageCount = visibleImages.length;
   const isValid = state.form.title.trim().length > 0 && state.form.date.trim().length > 0;
   const saveBtnStyle = "padding:12px 26px;border:none;border-radius:12px;font-weight:600;font-size:14.5px;color:#fff;background:" + (isValid && !state.busy ? 'var(--primary)' : '#B9D6C5') + ";cursor:" + (isValid && !state.busy ? 'pointer' : 'not-allowed');
 
-  const imageTiles = state.form.images.map((imageSrc, index) => `
-    <div style="position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid #DCEBE2;${bg(imageSrc)}">
+  const imageTiles = visibleImages.map(({ image, index }) => `
+    <div style="position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid #DCEBE2;${bg(image.url)}">
       <button onclick="App.removeFormImage(${index})" aria-label="Remove image ${index + 1}" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:8px;background:rgba(16,36,26,.72);color:#fff;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>`).join('');
 
@@ -137,7 +143,7 @@ function detailModal() {
   const sorted = sortedActivities();
   const activityIndex = sorted.findIndex(x => x.id === activity.id);
 
-  const images = activity.images || [];
+  const images = activeImages(activity);
   const hasImages = images.length > 0;
   const currentIndex = Math.min(state.detailImageIndex, Math.max(0, images.length - 1));
   const coverStyle = hasImages ? bg(images[currentIndex]) : ('background:' + GRADS[(activityIndex < 0 ? 0 : activityIndex) % GRADS.length]);
@@ -174,7 +180,7 @@ function detailModal() {
 function refreshDetailImage() {
   const activity = state.activities.find(x => x.id === state.detailId);
   if (!activity) return;
-  const images = activity.images || [];
+  const images = activeImages(activity);
   if (!images.length) return;
 
   const currentIndex = Math.min(state.detailImageIndex, Math.max(0, images.length - 1));

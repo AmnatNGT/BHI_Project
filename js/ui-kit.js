@@ -81,9 +81,10 @@ function activityCard(activity) {
   // sortedActivities() callers in views-public.js / views-admin.js — so
   // activities without a photo still get a distinct, consistent fallback
   // gradient instead of all looking the same.
-  const hasImage = activity.images && activity.images.length > 0;
-  const imageCount = activity.images ? activity.images.length : 0;
-  const cover = hasImage ? bg(activity.images[0]) : ('background:' + GRADS[activity._i % GRADS.length]);
+  const images = activeImages(activity);
+  const hasImage = images.length > 0;
+  const imageCount = images.length;
+  const cover = hasImage ? bg(images[0]) : ('background:' + GRADS[activity._i % GRADS.length]);
   const imageA11yAttrs = hasImage ? `role="img" aria-label="${attr(activity.title)}"` : 'aria-hidden="true"';
   return `
   <article class="card" onclick="App.openDetail('${activity.id}')" role="button" tabindex="0" aria-label="${attr(T.readmore + ': ' + activity.title)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();App.openDetail('${activity.id}')}" style="background:#fff;border:1px solid #DCEBE2;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .25s ease,box-shadow .25s ease;display:flex;flex-direction:column">
@@ -149,6 +150,7 @@ function footer() {
             <div style="font-size:11px;color:var(--on-dark-muted);margin-top:1px">${esc(state.org.tagline.en)}</div>
           </div>
         </div>
+        <div style="font-size:11px;font-weight:700;color:var(--on-dark-muted);margin-top:10px">👁 ${T.total_visits}: ${state.siteVisits.toLocaleString()}</div>
       </div>
       <div>
         <div style="font-weight:600;font-size:12.5px;color:#fff;margin-bottom:12px">${T.footer_contact}</div>

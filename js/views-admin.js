@@ -133,9 +133,10 @@ function orgReadOnlyPanel(org) {
 /* ---------------- Manage Activities tab ---------------- */
 
 function activityAdminRow(activity) {
-  const hasImage = activity.images && activity.images.length > 0;
-  const imageCount = activity.images ? activity.images.length : 0;
-  const cover = hasImage ? bg(activity.images[0]) : ('background:' + GRADS[activity._i % GRADS.length]);
+  const images = activeImages(activity);
+  const hasImage = images.length > 0;
+  const imageCount = images.length;
+  const cover = hasImage ? bg(images[0]) : ('background:' + GRADS[activity._i % GRADS.length]);
   const imageA11yAttrs = hasImage ? `role="img" aria-label="${attr(activity.title)}"` : 'aria-hidden="true"';
   return `
     <div style="display:flex;gap:14px;align-items:center;padding:12px;border:1px solid #DCEBE2;border-radius:14px;background:#fff">

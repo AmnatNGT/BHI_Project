@@ -76,6 +76,19 @@ function setPath(obj, path, value) {
   target[segments[segments.length - 1]] = value;
 }
 
+function normalizeImages(images) {
+  // Each activity image is stored as {url, isactive} so a single photo can be
+  // soft-deleted without touching the rest. Rows written before that change
+  // may still hold a plain URL string — treat those as active.
+  return (images || []).map(img => typeof img === 'string' ? { url: img, isactive: true } : { url: img.url, isactive: img.isactive !== false });
+}
+
+function activeImages(activity) {
+  // The URLs every public/admin view should actually render — soft-deleted
+  // photos stay in activity.images (and in the database) but are skipped here.
+  return (activity.images || []).filter(img => img.isactive !== false).map(img => img.url);
+}
+
 function sortedActivities() {
   // Newest first: by date, then by creation time as a tiebreaker so
   // same-day activities still show the most recently added one first.

@@ -36,7 +36,10 @@ let state = {
   loading: true, busy: false, errorMsg: '',
 
   // data loaded from Supabase via loadData() below
-  org: emptyOrg(), activities: [], members: [], milestones: []
+  org: emptyOrg(), activities: [], members: [], milestones: [],
+
+  // total site visits, shown in the public footer (see ui-kit.js footer())
+  siteVisits: 0
 };
 
 // Default org values, used before loadData() resolves and as the fallback
@@ -96,7 +99,7 @@ const activityFromRow = (row) => ({
   title: row.title || '',
   desc: row.description || '',
   date: row.date || '',
-  images: row.images || [],
+  images: normalizeImages(row.images),
   createdAt: row.created_at ? new Date(row.created_at).getTime() : 0
 });
 const milestoneFromRow = (row) => ({
@@ -113,11 +116,15 @@ const milestoneFromRow = (row) => ({
 async function loadData() {
   if (!sb) return;
 
+  // .eq('isactive', true) on each list query is what makes the admin's
+  // "delete" buttons a soft delete: deleted rows stay in the database but are
+  // never fetched back into the app (see deleteActivity/removeMember/removeMilestone
+  // in actions.js, which flip isactive to false instead of removing the row).
   const [orgResult, activitiesResult, membersResult, milestonesResult] = await Promise.all([
     sb.from('org').select('*').eq('id', 1).maybeSingle(),
-    sb.from('activities').select('*'),
-    sb.from('members').select('*').order('sort', { ascending: true }).order('created_at', { ascending: true }),
-    sb.from('milestones').select('*').order('created_at', { ascending: true })
+    sb.from('activities').select('*').eq('isactive', true),
+    sb.from('members').select('*').eq('isactive', true).order('sort', { ascending: true }).order('created_at', { ascending: true }),
+    sb.from('milestones').select('*').eq('isactive', true).order('created_at', { ascending: true })
   ]);
 
   // Supabase returns { data, error } per query — bail out on the first failure
@@ -135,4 +142,14 @@ async function loadData() {
   state.milestones = (milestonesResult.data || [])
     .map(milestoneFromRow)
     .sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
+
+  // Kept out of the Promise.all/firstError check above on purpose: this table
+  // may not exist yet on a project that hasn't re-run supabase-setup.sql —
+  // a failure here must not block the rest of the app from loading.
+  try {
+    const { data } = await sb.from('site_stats').select('visits').eq('id', 1).maybeSingle();
+    state.siteVisits = (data && data.visits) || 0;
+  } catch (e) {
+    state.siteVisits = 0;
+  }
 }

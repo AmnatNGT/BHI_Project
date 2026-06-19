@@ -41,9 +41,27 @@ function render() {
   root.innerHTML = html;
 }
 
+// Counts this tab once per browser session (sessionStorage survives reloads
+// within the same tab, so refreshing doesn't inflate the total) by calling
+// increment_site_visit() — a Supabase RPC, not a direct table write, so the
+// public anon key can only ever bump the counter by exactly 1 (see
+// supabase-setup.sql). Best-effort: failures are swallowed so a visitor never
+// sees an error because of this.
+function recordVisit() {
+  if (sessionStorage.getItem('bhi_visit_counted')) return;
+  sessionStorage.setItem('bhi_visit_counted', '1');
+  try {
+    // sb.rpc(...) returns a "thenable", not a real Promise — it only
+    // implements .then(), not .catch(), so the failure handler must be the
+    // second .then() argument (calling .catch() on it throws synchronously).
+    sb.rpc('increment_site_visit').then(() => {}, () => {});
+  } catch (e) {}
+}
+
 async function boot() {
   render(); // shows the setup screen or a loading spinner immediately
   if (!sb) return;
+  recordVisit();
   try {
     const { data: { session } } = await sb.auth.getSession();
     state.loggedIn = !!session;

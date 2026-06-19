@@ -14,8 +14,9 @@ function homeView() {
   const featured = sorted.slice(0, 3);
 
   const heroTiles = featured.map((activity, index) => {
-    const hasImage = activity.images && activity.images.length > 0;
-    const cover = hasImage ? bg(activity.images[0]) : ('background:' + GRADS[index % GRADS.length]);
+    const images = activeImages(activity);
+    const hasImage = images.length > 0;
+    const cover = hasImage ? bg(images[0]) : ('background:' + GRADS[index % GRADS.length]);
     const tileStyle = index === 0 ? 'grid-column:1 / -1;height:226px' : 'height:152px';
     const imageA11yAttrs = hasImage ? `role="img" aria-label="${attr(activity.title)}"` : 'aria-hidden="true"';
     return `

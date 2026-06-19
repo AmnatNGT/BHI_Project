@@ -65,6 +65,7 @@ const T = {
 
   // Admin — dashboard shell + shared action labels
   dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team',
+  total_visits: 'Total visits',
   saved: 'Saved', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
 

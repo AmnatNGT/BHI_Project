@@ -121,7 +121,9 @@ const App = {
     state.errorMsg = '';
     state.formOpen = true;
     state.editingId = id;
-    state.form = { title: activity.title, desc: activity.desc, date: activity.date, images: (activity.images || []).slice() };
+    // Deep-copy each image object (not just the array) so soft-deleting a
+    // photo in this form — before Save is clicked — can't mutate state.activities.
+    state.form = { title: activity.title, desc: activity.desc, date: activity.date, images: activity.images.map(img => ({ url: img.url, isactive: img.isactive })) };
     render();
   },
   closeForm() { state.formOpen = false; render(); },
@@ -129,14 +131,30 @@ const App = {
     state.form[fieldEl.dataset.path] = fieldEl.value;
     if (fieldEl.dataset.path === 'title' || fieldEl.dataset.path === 'date') updateSaveBtn();
   },
-  removeFormImage(index) { state.form.images = state.form.images.filter((_, i) => i !== index); render(); },
+  // `index` is the position in the full state.form.images array (see
+  // formModal() in modals.js, which keeps that index even though it only
+  // renders the still-active photos). A photo that was never uploaded yet
+  // (still a data: URL) is simply dropped; one that's already saved is kept
+  // and just flagged isactive:false, so Save persists it as a soft delete.
+  removeFormImage(index) {
+    const image = state.form.images[index];
+    if (!image) return;
+    if (image.url.indexOf('data:') === 0) {
+      state.form.images = state.form.images.filter((_, i) => i !== index);
+    } else {
+      image.isactive = false;
+    }
+    render();
+  },
   onPickImages(inputEl) {
     const pickedFiles = Array.from(inputEl.files || []);
     inputEl.value = '';
-    const remainingSlots = 30 - state.form.images.length;
+    const activeCount = state.form.images.filter(img => img.isactive !== false).length;
+    const remainingSlots = 30 - activeCount;
     const filesToAdd = pickedFiles.slice(0, Math.max(0, remainingSlots));
     Promise.all(filesToAdd.map(file => resize(file))).then(dataUrls => {
-      state.form.images = state.form.images.concat(dataUrls.filter(Boolean));
+      const newImages = dataUrls.filter(Boolean).map(url => ({ url, isactive: true }));
+      state.form.images = state.form.images.concat(newImages);
       render();
     });
   },
@@ -148,19 +166,21 @@ const App = {
     try {
       // Only newly-picked images are still data: URLs (from resize()) and
       // need uploading; images kept from the original activity are already
-      // public URLs, so re-uploading them would be wasted work.
-      const imageUrls = [];
+      // public URLs, so re-uploading them would be wasted work. Soft-deleted
+      // photos (isactive:false) are still written back so the row keeps them.
+      const images = [];
       for (const image of form.images) {
-        imageUrls.push(image.indexOf('data:') === 0 ? await uploadImage(image, 'activities') : image);
+        const url = image.url.indexOf('data:') === 0 ? await uploadImage(image.url, 'activities') : image.url;
+        images.push({ url, isactive: image.isactive !== false });
       }
       if (state.editingId) {
         const { error } = await sb.from('activities')
-          .update({ title: form.title, description: form.desc, date: form.date || null, images: imageUrls })
+          .update({ title: form.title, description: form.desc, date: form.date || null, images })
           .eq('id', state.editingId);
         if (error) throw error;
       } else {
         const { error } = await sb.from('activities')
-          .insert({ title: form.title, description: form.desc, date: form.date || today(), images: imageUrls });
+          .insert({ title: form.title, description: form.desc, date: form.date || today(), images });
         if (error) throw error;
       }
       await loadData();
@@ -172,10 +192,13 @@ const App = {
       render();
     }
   },
+  // Soft delete: flips isactive to false instead of removing the row, so the
+  // activity stays in the database but loadData() (filtered to isactive=true)
+  // never fetches it back into the app.
   async deleteActivity(id) {
     if (!window.confirm(T.confirm_del)) return;
     try {
-      const { error } = await sb.from('activities').delete().eq('id', id);
+      const { error } = await sb.from('activities').update({ isactive: false }).eq('id', id);
       if (error) throw error;
       await loadData();
       render();
@@ -244,10 +267,11 @@ const App = {
       render();
     }
   },
+  // Soft delete (see deleteActivity above for why): keeps the row, just hides it.
   async removeMember(id) {
     if (!window.confirm(T.confirm_del_member)) return;
     try {
-      const { error } = await sb.from('members').delete().eq('id', id);
+      const { error } = await sb.from('members').update({ isactive: false }).eq('id', id);
       if (error) throw error;
       await loadData();
       render();
@@ -433,10 +457,11 @@ const App = {
       render();
     }
   },
+  // Soft delete (see deleteActivity above for why): keeps the row, just hides it.
   async removeMilestone(id) {
     if (!window.confirm(T.confirm_del_ms)) return;
     try {
-      const { error } = await sb.from('milestones').delete().eq('id', id);
+      const { error } = await sb.from('milestones').update({ isactive: false }).eq('id', id);
       if (error) throw error;
       await loadData();
       render();
@@ -450,14 +475,14 @@ const App = {
   closeDetail() { state.detailOpen = false; render(); },
   detailPrev() {
     const activity = state.activities.find(x => x.id === state.detailId);
-    const imageCount = activity && activity.images ? activity.images.length : 0;
+    const imageCount = activity ? activeImages(activity).length : 0;
     if (imageCount < 2) return;
     state.detailImageIndex = (state.detailImageIndex - 1 + imageCount) % imageCount;
     refreshDetailImage();
   },
   detailNext() {
     const activity = state.activities.find(x => x.id === state.detailId);
-    const imageCount = activity && activity.images ? activity.images.length : 0;
+    const imageCount = activity ? activeImages(activity).length : 0;
     if (imageCount < 2) return;
     state.detailImageIndex = (state.detailImageIndex + 1) % imageCount;
     refreshDetailImage();

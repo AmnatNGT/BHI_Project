@@ -46,7 +46,8 @@ create table if not exists public.activities (
   title       text not null,
   description text default '',
   date        date,
-  images      jsonb default '[]'::jsonb,   -- array of public image URLs
+  images      jsonb default '[]'::jsonb,   -- array of {"url":"...","isactive":true} objects
+  isactive    boolean not null default true,
   created_at  timestamptz default now()
 );
 
@@ -57,6 +58,7 @@ create table if not exists public.members (
   bio         text default '',
   photo       text default '',             -- public image URL
   sort        int default 0,
+  isactive    boolean not null default true,
   created_at  timestamptz default now()
 );
 
@@ -66,8 +68,33 @@ create table if not exists public.milestones (
   title       text default '',
   description text default '',
   sort        int default 0,
+  isactive    boolean not null default true,
   created_at  timestamptz default now()
 );
+
+-- patches existing tables that predate the isactive (soft-delete) column.
+-- "Delete" in the admin UI now sets isactive=false instead of removing the
+-- row, so the record stays in the database but is never read back by the app.
+alter table public.activities add column if not exists isactive boolean not null default true;
+alter table public.members    add column if not exists isactive boolean not null default true;
+alter table public.milestones add column if not exists isactive boolean not null default true;
+
+-- migrates activities.images from an array of plain URL strings to an array
+-- of {"url":..., "isactive":true} objects, so individual photos can be
+-- soft-deleted the same way as a whole activity. Guarded so it only touches
+-- rows that still have a plain-string element (safe to re-run).
+update public.activities
+set images = (
+  select coalesce(jsonb_agg(
+    case jsonb_typeof(elem)
+      when 'string' then jsonb_build_object('url', elem, 'isactive', true)
+      else elem
+    end
+  ), '[]'::jsonb)
+  from jsonb_array_elements(images) as elem
+)
+where images is not null
+  and exists (select 1 from jsonb_array_elements(images) as e where jsonb_typeof(e) = 'string');
 
 -- ----------------------------------------------------------------
 -- 2) SEED DATA  (each block runs only if that table is still empty)
@@ -142,9 +169,9 @@ drop policy if exists "public read activities" on public.activities;
 drop policy if exists "public read members"    on public.members;
 drop policy if exists "public read milestones" on public.milestones;
 create policy "public read org"        on public.org        for select using (true);
-create policy "public read activities" on public.activities for select using (true);
-create policy "public read members"    on public.members    for select using (true);
-create policy "public read milestones" on public.milestones for select using (true);
+create policy "public read activities" on public.activities for select using (isactive = true);
+create policy "public read members"    on public.members    for select using (isactive = true);
+create policy "public read milestones" on public.milestones for select using (isactive = true);
 
 drop policy if exists "auth write org"        on public.org;
 drop policy if exists "auth write activities" on public.activities;
@@ -175,6 +202,42 @@ create policy "auth update images" on storage.objects
   for update to authenticated using (bucket_id = 'activity-images');
 create policy "auth delete images" on storage.objects
   for delete to authenticated using (bucket_id = 'activity-images');
+
+-- ----------------------------------------------------------------
+-- 5) SITE VISIT COUNTER
+--   A single running total of page loads, shown to admins on the dashboard.
+--   The public site calls increment_site_visit() (a security-definer
+--   function) once per browser tab/session instead of writing to the table
+--   directly, so the anon key can bump the counter without needing a write
+--   policy on site_stats.
+-- ----------------------------------------------------------------
+
+create table if not exists public.site_stats (
+  id      int primary key default 1,
+  visits  bigint not null default 0,
+  constraint site_stats_single_row check (id = 1)
+);
+
+insert into public.site_stats (id, visits) values (1, 0)
+on conflict (id) do nothing;
+
+alter table public.site_stats enable row level security;
+
+-- shown in the public footer (see ui-kit.js footer()), so anyone can read it.
+drop policy if exists "auth read site_stats" on public.site_stats;
+drop policy if exists "public read site_stats" on public.site_stats;
+create policy "public read site_stats" on public.site_stats for select using (true);
+
+create or replace function public.increment_site_visit()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.site_stats set visits = visits + 1 where id = 1;
+$$;
+
+grant execute on function public.increment_site_visit() to anon, authenticated;
 
 -- ============================================================
 --  DONE.

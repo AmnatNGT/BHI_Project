@@ -1,14 +1,13 @@
 :root{
   --primary:#1F7A4D;--primary-strong:#155C3A;--primary-soft:#E5F1EA;--primary-pale:#F5FAF7;
   --ink:#13261D;--ink-soft:#3E5249;--muted:#5C7468;--on-dark-muted:#E6F4EC;
-  --gold:#AD8A4E;--gold-soft:#F4ECDC;--line:#DCEAE1;--deep:#10241A;
+  --gold:#AD8A4E;--gold-soft:#F4ECDC;
   --shadow-sm:0 1px 2px rgba(15,35,25,.06);
   --shadow-md:0 16px 34px -18px rgba(20,60,40,.35);
   --shadow-lg:0 30px 60px -24px rgba(15,45,30,.32);
   --font-display:'Fraunces','IBM Plex Sans Thai',serif;
   --font-body:'Sarabun','IBM Plex Sans Thai',sans-serif;
   --font-ui:'IBM Plex Sans Thai','Sarabun',sans-serif;
-  --brand-gradient:linear-gradient(135deg,#34A573,#155C3A);
   --brand-gradient-scrim:linear-gradient(rgba(10,26,18,.32),rgba(10,26,18,.32)),linear-gradient(135deg,#34A573,#155C3A);
 }
 *{box-sizing:border-box}

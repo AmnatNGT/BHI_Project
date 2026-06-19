@@ -64,9 +64,8 @@ const T = {
   login_btn: 'Log in', login_hint: 'Sign in with the admin account', login_err: 'Incorrect email or password',
 
   // Admin — dashboard shell + shared action labels
-  dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team', autosave: 'Changes save automatically',
+  dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team',
   saved: 'Saved', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel',
-  save_changes: 'Save changes', save_hint: 'Edits are applied only after you click Save', unsaved: 'Unsaved changes',
   at_org: 'Organization', at_act: 'Activities', at_hist: 'Our Story', at_mem: 'Our Team',
 
   // Admin — activity add/edit form

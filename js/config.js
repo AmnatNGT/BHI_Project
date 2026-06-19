@@ -9,6 +9,7 @@
 const SUPABASE_URL      = 'https://vcokcwnjcwrjisyoazqe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjb2tjd25qY3dyamlzeW9henFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDQ1MzMsImV4cCI6MjA5NzI4MDUzM30.IYJP174jcGDFZ2liHg0zcAa1cCAbR-q4VJZWmQB3fvY';
 const BUCKET             = 'activity-images';
+const IDLE_LIMIT_MS      = 30 * 60 * 1000; // auto-logout admins after this many ms of inactivity
 
 // True once someone has pasted a real anon key in place of the placeholder.
 // While false, render() shows setupScreen() instead of the app (see app.js).
@@ -62,6 +63,7 @@ const T = {
   // Admin — login screen
   login_title: 'Admin Login', login_sub: 'For organization staff only', login_user: 'Email', login_pass: 'Password',
   login_btn: 'Log in', login_hint: 'Sign in with the admin account', login_err: 'Incorrect email or password',
+  session_timeout: 'You were logged out after 30 minutes of inactivity.',
 
   // Admin — dashboard shell + shared action labels
   dash_title: 'Admin Dashboard', dash_orginfo: 'Organization Info', dash_actmgr: 'Manage Activities', dash_memmgr: 'Manage Team',

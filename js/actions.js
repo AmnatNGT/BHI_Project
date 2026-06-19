@@ -65,6 +65,15 @@ const App = {
     state.menuOpen = false;
     render();
   },
+  // Same effect as a manual logout, plus a toast explaining why — triggered
+  // by the idle timer in app.js after 30 minutes with no mouse/keyboard/scroll
+  // activity (see IDLE_LIMIT_MS in config.js).
+  async autoLogout() {
+    if (!state.loggedIn) return;
+    await App.logout();
+    state.errorMsg = T.session_timeout;
+    render();
+  },
 
   /* ---- per-block Edit / Save / Cancel ----
      Organization info and "our story" both follow the same pattern:

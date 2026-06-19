@@ -73,4 +73,26 @@ async function boot() {
     render();
   }
 }
+
+/* ---- idle auto-logout (admin sessions only) ----
+   Plain activity listeners + a slow poll; checkIdle() is a no-op while
+   state.loggedIn is false, so this costs nothing for public visitors.
+   visibilitychange/focus catch the case where the tab was hidden/asleep for
+   the whole 30 minutes, so logout happens the instant the admin comes back
+   instead of waiting for the next poll. */
+let lastActivityAt = Date.now();
+function markActivity() { lastActivityAt = Date.now(); }
+['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(eventName =>
+  document.addEventListener(eventName, markActivity, { passive: true })
+);
+
+function checkIdle() {
+  if (!state.loggedIn) return;
+  if (Date.now() - lastActivityAt < IDLE_LIMIT_MS) return;
+  App.autoLogout();
+}
+setInterval(checkIdle, 30 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkIdle(); });
+window.addEventListener('focus', checkIdle);
+
 boot();

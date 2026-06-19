@@ -91,9 +91,9 @@ const App = {
   // detail
   openDetail(id){ state.detailOpen=true; state.detailId=id; state.di=0; render(); },
   closeDetail(){ state.detailOpen=false; render(); },
-  detailPrev(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di-1+n)%n; render(); },
-  detailNext(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di+1)%n; render(); },
-  detailGo(i){ state.di=i; render(); },
+  detailPrev(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di-1+n)%n; refreshDetailImage(); },
+  detailNext(){ const a=state.activities.find(x=>x.id===state.detailId); const n=a&&a.images?a.images.length:0; if(n<2) return; state.di=(state.di+1)%n; refreshDetailImage(); },
+  detailGo(i){ state.di=i; refreshDetailImage(); },
   dismissError(){ state.errorMsg=''; render(); }
 };
 

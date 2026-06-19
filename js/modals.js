@@ -124,7 +124,7 @@ function detailModal(){
   const curStyle=has?bg(imgs[di]):('background:'+GRADS[(idx<0?0:idx)%GRADS.length]);
   const multi=imgs.length>1;
   const thumbs=imgs.map((src,i)=>`
-    <div onclick="App.detailGo(${i})" style="width:66px;height:66px;border-radius:11px;cursor:pointer;${bg(src)};${i===di?'outline:3px solid var(--primary);outline-offset:1px':'opacity:.7'}"></div>`).join('');
+    <div class="detail-thumb" onclick="App.detailGo(${i})" style="width:66px;height:66px;border-radius:11px;cursor:pointer;${bg(src)};${i===di?'outline:3px solid var(--primary);outline-offset:1px':'opacity:.7'}"></div>`).join('');
   return `
   <div class="modal-wrap" onclick="App.closeDetail()" style="position:fixed;inset:0;z-index:110;background:rgba(16,32,22,.66);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease both">
     <div onclick="event.stopPropagation()" style="background:#fff;border-radius:22px;max-width:840px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 40px 90px -30px rgba(16,32,18,.6);animation:pop .35s ease both">
@@ -143,6 +143,20 @@ function detailModal(){
       </div>
     </div>
   </div>`;
+}
+
+function refreshDetailImage(){
+  const da=state.activities.find(x=>x.id===state.detailId);
+  if(!da) return;
+  const imgs=da.images||[];
+  if(!imgs.length) return;
+  const di=Math.min(state.di,Math.max(0,imgs.length-1));
+  const hero=document.querySelector('.detail-hero');
+  if(hero) hero.style.backgroundImage="url('"+String(imgs[di]).replace(/'/g,"%27")+"')";
+  document.querySelectorAll('.detail-thumb').forEach((el,i)=>{
+    if(i===di){ el.style.outline='3px solid var(--primary)'; el.style.outlineOffset='1px'; el.style.opacity=''; }
+    else { el.style.outline='none'; el.style.opacity='.7'; }
+  });
 }
 
 function setupScreen(){
